@@ -104,7 +104,7 @@ export default function HowWeWork() {
         title={L({ es: "Hablemos de tu propiedad, en la etapa que estés.", en: "Let's talk about your property, whatever stage you're in." })}
         sub={L({ es: "Comprar, rentar, administrar o vender. Una contraparte de largo plazo para todo el ciclo.", en: "Buy, rent, manage or sell. A long-term counterpart for the whole cycle." })}
         primary={L({ es: "Agendar una llamada", en: "Book a call" })}
-        secondary={L({ es: "Preguntar al asesor IA", en: "Ask the AI advisor" })}
+        secondary={L({ es: "Preguntar al asesor", en: "Ask the advisor" })}
       />
     </>
   );

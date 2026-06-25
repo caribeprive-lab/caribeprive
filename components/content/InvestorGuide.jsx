@@ -164,7 +164,7 @@ export default function InvestorGuide() {
         title={L({ es: "¿Listo para ver los números de tu caso?", en: "Ready to see the numbers for your case?" })}
         sub={L({ es: "Agenda una llamada y te explicamos el proceso completo aplicado a tu objetivo y presupuesto.", en: "Book a call and we'll walk you through the full process applied to your goal and budget." })}
         primary={L({ es: "Agendar una llamada", en: "Book a call" })}
-        secondary={L({ es: "Preguntar al asesor IA", en: "Ask the AI advisor" })}
+        secondary={L({ es: "Preguntar al asesor", en: "Ask the advisor" })}
       />
     </>
   );
