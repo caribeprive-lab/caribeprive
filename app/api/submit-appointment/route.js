@@ -93,6 +93,7 @@ export async function POST(req) {
 
     // 2 — Crear cita (solo si tenemos el contactId)
     let appointmentId = null;
+    let appointmentError = null;
     if (contactId) {
       const dateObj = new Date(date);
       const notes = [
@@ -113,12 +114,14 @@ export async function POST(req) {
 
       if (apptError) console.warn("[submit-appointment] cita:", apptError);
       appointmentId = apptId;
+      appointmentError = apptError;
     }
 
     return Response.json({
       ok: true,
       contactId,
       appointmentId,
+      appointmentError,
       ghlConfigured: !!(process.env.GHL_API_KEY && process.env.GHL_LOCATION_ID),
     });
   } catch (err) {
