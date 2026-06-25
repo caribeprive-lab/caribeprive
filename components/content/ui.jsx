@@ -35,6 +35,23 @@ export function PageHero({ image, eyebrow, title, sub }) {
   );
 }
 
+// ── Banda de imagen a todo lo ancho ─────────────────────────────────────────────
+export function ImageBand({ image, alt = "", caption }) {
+  return (
+    <section className="relative h-[260px] md:h-[440px] overflow-hidden">
+      <img src={image} alt={alt} className="absolute inset-0 h-full w-full object-cover" />
+      {caption && (
+        <>
+          <div className="absolute inset-0" style={{ background: "linear-gradient(0deg,rgba(12,22,38,.65),transparent 55%)" }} />
+          <div className="absolute bottom-0 left-0 right-0 max-w-[1100px] mx-auto px-6 md:px-8 pb-7">
+            <p className="text-white/90 text-[14px] md:text-[16px] max-w-[52ch]">{caption}</p>
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
 // ── Contenedor de sección ───────────────────────────────────────────────────────
 export function Section({ children, className = "", tone = "paper" }) {
   const bg = tone === "white" ? "bg-white" : tone === "bone" ? "bg-bone" : "bg-paper";

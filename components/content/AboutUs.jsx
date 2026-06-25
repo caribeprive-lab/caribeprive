@@ -34,7 +34,7 @@ export default function AboutUs() {
   return (
     <>
       <PageHero
-        image="https://cdn.grupodaxi.com/images/web-puerto369/generales/puerto369-grupo-daxi-28.webp"
+        image="/articulos/G.jpg"
         eyebrow={L({ es: "Sobre nosotros", en: "About us" })}
         title={L({ es: "Asesoría inmobiliaria que no desaparece al firmar.", en: "Real estate advisory that doesn't vanish at signing." })}
         sub={L({

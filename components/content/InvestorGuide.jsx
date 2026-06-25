@@ -4,7 +4,7 @@ import { useLang } from "@/components/LanguageProvider";
 import Reveal from "@/components/Reveal";
 import {
   PageHero, Section, SectionHead, StatCard, FeatureCard,
-  FaqList, Note, CTABand, Icons,
+  FaqList, Note, CTABand, ImageBand, Icons,
 } from "@/components/content/ui";
 
 export default function InvestorGuide() {
@@ -68,7 +68,7 @@ export default function InvestorGuide() {
   return (
     <>
       <PageHero
-        image="https://cdn.grupodaxi.com/images/web-puerto369/generales/puerto369-grupo-daxi-01.webp"
+        image="/articulos/A.jpg"
         eyebrow={L({ es: "Guía del inversionista", en: "Investor guide" })}
         title={L({ es: "Comprar en el Caribe Mexicano, sin letras chiquitas.", en: "Buying in the Mexican Caribbean, no fine print." })}
         sub={L({
@@ -148,6 +148,15 @@ export default function InvestorGuide() {
           </Note>
         </div>
       </Section>
+
+      <ImageBand
+        image="/articulos/C.jpg"
+        alt={L({ es: "Costa del Caribe Mexicano", en: "Mexican Caribbean coast" })}
+        caption={L({
+          es: "Playas de arena blanca y agua turquesa: el activo que sostiene la demanda y la plusvalía del corredor.",
+          en: "White-sand beaches and turquoise water: the asset that sustains the corridor's demand and appreciation.",
+        })}
+      />
 
       {/* FAQ */}
       <Section tone="white" className="py-20 md:py-28">

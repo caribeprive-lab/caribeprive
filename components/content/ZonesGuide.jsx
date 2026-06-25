@@ -9,7 +9,7 @@ import {
 const ZONES = [
   {
     key: "cancun",
-    image: "https://static.wixstatic.com/media/f37000_e6136adab0b84c4388dcedf6bc6fc41c~mv2.jpg/v1/fill/w_1600,h_1000,al_c,q_85/f37000_e6136adab0b84c4388dcedf6bc6fc41c~mv2.jpg",
+    image: "/articulos/B.jpg",
     name: "Cancún · Puerto Cancún",
     price: "$2,900 – $4,000+ USD/m²",
     appr: "8 – 12%",
@@ -22,7 +22,7 @@ const ZONES = [
   },
   {
     key: "pm",
-    image: "https://cdn.grupodaxi.com/images/mukta-largas/mukta-larga-grupo-daxi-01.webp",
+    image: "/articulos/E.jpg",
     name: "Puerto Morelos",
     price: "~$2,000 USD/m²",
     appr: "8 – 12%",
@@ -35,7 +35,7 @@ const ZONES = [
   },
   {
     key: "riviera",
-    image: "https://cdn.grupodaxi.com/images/web-puerto369/generales/puerto369-grupo-daxi-10.webp",
+    image: "/articulos/H.jpg",
     name: "Riviera Maya · Playa del Carmen / Tulum",
     price: "$2,000 – $4,500 USD/m²",
     appr: "12 – 14%",
@@ -71,7 +71,7 @@ export default function ZonesGuide() {
   return (
     <>
       <PageHero
-        image="https://static.wixstatic.com/media/f37000_e692f9afa24d4f329a89e685f43d8fb2~mv2.jpg/v1/fill/w_1600,h_1000,al_c,q_85/f37000_e692f9afa24d4f329a89e685f43d8fb2~mv2.jpg"
+        image="/articulos/D.jpg"
         eyebrow={L({ es: "Guía de zonas", en: "Zones guide" })}
         title={L({ es: "¿Dónde conviene invertir en el Caribe Mexicano?", en: "Where should you invest in the Mexican Caribbean?" })}
         sub={L({

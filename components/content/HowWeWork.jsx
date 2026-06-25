@@ -3,7 +3,7 @@
 import { useLang } from "@/components/LanguageProvider";
 import Reveal from "@/components/Reveal";
 import {
-  PageHero, Section, SectionHead, FeatureCard, CTABand, Icons,
+  PageHero, Section, SectionHead, FeatureCard, CTABand, ImageBand, Icons,
 } from "@/components/content/ui";
 
 export default function HowWeWork() {
@@ -26,7 +26,7 @@ export default function HowWeWork() {
   return (
     <>
       <PageHero
-        image="https://cdn.grupodaxi.com/images/mukta-largas/mukta-larga-grupo-daxi-02.webp"
+        image="/articulos/F.jpg"
         eyebrow={L({ es: "Cómo trabajamos", en: "How we work" })}
         title={L({ es: "La compra es solo el inicio de la relación.", en: "The purchase is only the start of the relationship." })}
         sub={L({
@@ -53,6 +53,15 @@ export default function HowWeWork() {
           ))}
         </div>
       </Section>
+
+      <ImageBand
+        image="/articulos/H.jpg"
+        alt={L({ es: "Riviera Maya desde el aire", en: "Riviera Maya from above" })}
+        caption={L({
+          es: "Del primer recorrido a la estrategia de salida: una sola contraparte para todo el ciclo.",
+          en: "From the first tour to the exit strategy: a single counterpart for the whole cycle.",
+        })}
+      />
 
       {/* Los compromisos */}
       <Section tone="white" className="py-20 md:py-28">
