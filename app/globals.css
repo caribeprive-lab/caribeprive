@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Coolvetica Condensed (display). Si el CDN falla, cae a Barlow Condensed. */
+@font-face {
+  font-family: "Coolvetica Condensed";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("https://db.onlinewebfonts.com/t/0754a87a6aa14ab86abe03e805d71adf.woff2") format("woff2"),
+       url("https://db.onlinewebfonts.com/t/0754a87a6aa14ab86abe03e805d71adf.woff") format("woff");
+}
+
+:root {
+  --paper: #f6f4ee;
+  --ink: #0c1626;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Inter", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, .display {
+  font-family: "Coolvetica Condensed", "Barlow Condensed", sans-serif;
+  font-weight: 500;
+  letter-spacing: 3px;
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+/* marquee / utilities */
+.glass { backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+
+/* chat scrollbar */
+.chat-scroll::-webkit-scrollbar { width: 6px; }
+.chat-scroll::-webkit-scrollbar-thumb { background: #cfcabd; border-radius: 10px; }
