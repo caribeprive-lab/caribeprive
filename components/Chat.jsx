@@ -180,7 +180,7 @@ export default function Chat({ propertyName = null }) {
             <button onClick={() => setOpen(false)} className="text-white/70 hover:text-white text-xl leading-none">×</button>
           </div>
 
-          <div ref={bodyRef} className="chat-scroll p-4 flex flex-col gap-3 max-h-[460px] min-h-[260px] overflow-auto">
+          <div ref={bodyRef} className="chat-scroll p-4 flex flex-col gap-3 max-h-[48vh] sm:max-h-[460px] min-h-[180px] overflow-auto">
             {messages.map((m, i) => (
               m.role === "user" ? (
                 <div key={i} className="text-[13.5px] px-3.5 py-2.5 rounded-xl rounded-br-sm max-w-[85%] whitespace-pre-wrap bg-blue text-white self-end">
