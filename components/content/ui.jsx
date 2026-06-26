@@ -11,7 +11,7 @@ const openChat = () => window.dispatchEvent(new CustomEvent("ns-open-chat"));
 export function PageHero({ image, eyebrow, title, sub }) {
   return (
     <header className="relative min-h-[68vh] flex items-end overflow-hidden bg-blue-deep">
-      <img src={image} alt="" className="absolute inset-0 h-full w-full object-cover" />
+      <img src={image} alt="" fetchpriority="high" decoding="async" className="absolute inset-0 h-full w-full object-cover" />
       <div
         className="absolute inset-0"
         style={{
@@ -40,7 +40,7 @@ export function PageHero({ image, eyebrow, title, sub }) {
 export function ImageBand({ image, alt = "", kicker, title, ctaLabel, ctaHref = "/agendar" }) {
   return (
     <section className="relative h-[380px] md:h-[480px] overflow-hidden flex items-center justify-center text-center">
-      <img src={image} alt={alt} className="absolute inset-0 h-full w-full object-cover" />
+      <img src={image} alt={alt} loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover" />
       <div className="absolute inset-0" style={{ background: "linear-gradient(180deg,rgba(12,22,38,.5) 0%,rgba(35,46,57,.55) 50%,rgba(12,22,38,.8) 100%)" }} />
       <div className="absolute -bottom-28 left-1/2 -translate-x-1/2 w-[560px] h-[560px] rounded-full blur-3xl opacity-40 pointer-events-none"
         style={{ background: "radial-gradient(circle,#3FB0A0,transparent 70%)" }} />

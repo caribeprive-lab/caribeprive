@@ -61,10 +61,10 @@ export default function PropertyView({ property: p }) {
         style={{ height: "100svh" }}
       >
         <div className="absolute inset-0 z-[1]">
-          <img src={p.heroImage} alt={p.name} className="h-full w-full object-cover opacity-60" />
+          <img src={p.heroImage} alt={p.name} fetchpriority="high" decoding="async" className="h-full w-full object-cover opacity-60" />
           <div
             className="absolute inset-0"
-            style={{ background: "linear-gradient(180deg,rgba(6,35,77,.3),rgba(6,35,77,.85))" }}
+            style={{ background: "linear-gradient(180deg,rgba(35,46,57,.3),rgba(35,46,57,.9))" }}
           />
         </div>
         <div className="relative z-[2] w-full max-w-[1200px] mx-auto px-6 md:px-8">
@@ -135,6 +135,8 @@ export default function PropertyView({ property: p }) {
                     <img
                       src={p.developer.logo}
                       alt={p.developer.name}
+                      loading="lazy"
+                      decoding="async"
                       className="max-h-[109px] w-auto object-contain"
                       onError={e => { e.target.style.display = "none"; e.target.nextSibling.style.display = "block"; }}
                     />
@@ -193,6 +195,8 @@ export default function PropertyView({ property: p }) {
                 <img
                   src={p.gallery[0]}
                   alt=""
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover hover:scale-105 transition-transform duration-700 ease-out"
                 />
               </div>
@@ -203,6 +207,8 @@ export default function PropertyView({ property: p }) {
                     <img
                       src={g}
                       alt=""
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover hover:scale-105 transition-transform duration-700 ease-out"
                     />
                   </div>
@@ -315,6 +321,8 @@ function AmenityCard({ item, lang, index }) {
         <img
           src={item.image}
           alt={item.title[lang]}
+          loading="lazy"
+          decoding="async"
           className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
         />
       </div>

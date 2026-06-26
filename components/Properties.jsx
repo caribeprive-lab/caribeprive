@@ -48,6 +48,8 @@ export default function Properties() {
                     <img
                       src={p.cardImage}
                       alt={p.name}
+                      loading="lazy"
+                      decoding="async"
                       className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"
                     />
                     <span className="absolute top-3.5 left-3.5 bg-yellow text-ink text-[10px] font-semibold tracking-[0.1em] uppercase px-3 py-1.5 rounded-full">

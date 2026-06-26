@@ -8,7 +8,7 @@ import {
 
 const TEAM = [
   {
-    photo: "/anafoto.png",
+    photo: "/anafoto.webp",
     name: "Ana Paula Quiroga",
     role: { es: "Property Matchmaker", en: "Property Matchmaker" },
     bio: {
@@ -17,7 +17,7 @@ const TEAM = [
     },
   },
   {
-    photo: "/betyfoto.png",
+    photo: "/betyfoto.webp",
     name: "Beatriz Ávila",
     role: { es: "Property Matchmaker", en: "Property Matchmaker" },
     bio: {
@@ -78,7 +78,7 @@ export default function AboutUs() {
               <article className="rounded-2xl border border-line bg-paper overflow-hidden flex flex-col h-full">
                 <div className="relative h-[280px] bg-blue-deep overflow-hidden">
                   <div className="absolute inset-0" style={{ background: "radial-gradient(120% 100% at 50% 0%, #344351, #232e39)" }} />
-                  <img src={m.photo} alt={m.name} className="relative h-full w-full object-contain object-bottom" />
+                  <img src={m.photo} alt={m.name} loading="lazy" decoding="async" className="relative h-full w-full object-contain object-bottom" />
                 </div>
                 <div className="p-6">
                   <h3 className="text-ink text-[20px] font-medium">{m.name}</h3>

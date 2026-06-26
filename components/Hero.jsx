@@ -8,8 +8,8 @@ const openChat = () => window.dispatchEvent(new CustomEvent("ns-open-chat"));
 
 // Asesoras que rotan en el hero cada 3 s
 const advisors = [
-  { photo: "/anafoto.png", name: "Ana Paula Quiroga" },
-  { photo: "/betyfoto.png", name: "Beatriz Ávila" },
+  { photo: "/anafoto.webp", name: "Ana Paula Quiroga" },
+  { photo: "/betyfoto.webp", name: "Beatriz Ávila" },
 ];
 
 export default function Hero() {

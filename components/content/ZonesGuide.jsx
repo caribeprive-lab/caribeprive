@@ -91,7 +91,7 @@ export default function ZonesGuide() {
             <Reveal key={z.key} delay={i * 0.08}>
               <article className="rounded-2xl border border-line bg-white overflow-hidden flex flex-col h-full">
                 <div className="aspect-[4/3] overflow-hidden">
-                  <img src={z.image} alt={z.name} className="h-full w-full object-cover" />
+                  <img src={z.image} alt={z.name} loading="lazy" decoding="async" className="h-full w-full object-cover" />
                 </div>
                 <div className="p-6 flex-1 flex flex-col">
                   <h3 className="text-ink text-[20px] font-medium mb-1">{z.name}</h3>
