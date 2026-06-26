@@ -19,6 +19,7 @@ export default function Chat({ propertyName = null }) {
   const [booking, setBooking] = useState(false);     // mini-agenda abierta
   const [bookingSubmitting, setBookingSubmitting] = useState(false);
   const [booked, setBooked] = useState(false);
+  const [offerBooking, setOfferBooking] = useState(false); // el bot pidió ofrecer cita
 
   const bodyRef = useRef(null);
 
@@ -62,6 +63,7 @@ export default function Chat({ propertyName = null }) {
         }),
       });
       const data = await res.json();
+      if (data.offer) setOfferBooking(true);
       setMessages([...next, { role: "assistant", content: data.reply || t("chat.error") }]);
     } catch {
       setMessages([...next, { role: "assistant", content: t("chat.error") }]);
@@ -124,7 +126,8 @@ export default function Chat({ propertyName = null }) {
   };
 
   const userMsgCount = messages.filter((m) => m.role === "user").length;
-  const showLeadForm = !lead && userMsgCount >= 1 && !loading && !booking && !booked;
+  // El formulario aparece cuando el bot lo señala ([[BOOK]]); o como respaldo tras varias respuestas.
+  const showLeadForm = (offerBooking || userMsgCount >= 5) && !lead && !loading && !booking && !booked;
   const showBookChip = lead && !booking && !booked;
 
   return (
