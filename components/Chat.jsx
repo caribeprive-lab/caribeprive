@@ -121,13 +121,18 @@ export default function Chat({ propertyName = null }) {
   const confirmBooking = async (date, time) => {
     setBookingSubmitting(true);
     try {
+      const context = messages
+        .filter((m) => m.role === "user" || m.role === "assistant")
+        .slice(-12)
+        .map((m) => `${m.role === "user" ? "Cliente" : "Ana"}: ${m.content}`)
+        .join("\n");
       await fetch("/api/submit-appointment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: lead.name, whatsapp: lead.phone, email: lead.email || "",
           propertyTypes: [], destinations: [], budget: "",
-          date: date.toISOString(), time,
+          date: date.toISOString(), time, context,
         }),
       });
       setBooked({ date, time });

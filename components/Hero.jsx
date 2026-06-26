@@ -120,17 +120,19 @@ export default function Hero() {
               </a>
             </motion.div>
 
-            {/* foto mobile — solo visible en móvil */}
+            {/* foto mobile — solo visible en móvil (altura fija para evitar saltos al rotar) */}
             <div className="md:hidden mt-8 flex flex-col items-center relative">
-              <motion.img
-                key={advisor.photo}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.6, ease: "easeInOut" }}
-                src={advisor.photo}
-                alt={advisor.name}
-                className="w-64 object-contain object-bottom"
-              />
+              <div className="relative w-64 h-[340px]">
+                <motion.img
+                  key={advisor.photo}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.6, ease: "easeInOut" }}
+                  src={advisor.photo}
+                  alt={advisor.name}
+                  className="absolute inset-0 w-full h-full object-contain object-bottom"
+                />
+              </div>
               <span
                 className="absolute bottom-16 left-1/2 -translate-x-1/2 inline-flex items-center px-6 py-1.5 text-ink text-xs font-semibold tracking-[0.08em] whitespace-nowrap"
                 style={{ background: "#3FB0A0", clipPath: "polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%)" }}

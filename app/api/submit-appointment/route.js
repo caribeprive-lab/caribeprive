@@ -16,7 +16,7 @@ export const runtime = "nodejs";
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { name, whatsapp, email, propertyTypes, destinations, budget, date, time } = body;
+    const { name, whatsapp, email, propertyTypes, destinations, budget, date, time, context } = body;
 
     // Validación mínima
     if (!name || !whatsapp || !date || !time) {
@@ -69,7 +69,8 @@ export async function POST(req) {
       propsText  && `Tipo de propiedad: ${propsText}`,
       destText   && `Destino: ${destText}`,
       budgetLabel && `Presupuesto: ${budgetLabel}`,
-      `Origen: Formulario de cita web`,
+      `Origen: ${context ? "Chatbot web" : "Formulario de cita web"}`,
+      context && `\n--- Conversación ---\n${context}`,
     ].filter(Boolean).join("\n");
 
     // 1 — Crear / actualizar contacto (keys = custom fields de GHL)
