@@ -6,6 +6,27 @@ import ChatScheduler from "@/components/ChatScheduler";
 
 const ANA_WHATSAPP = "529981543151";
 
+function buildWaUrl({ name, date, time }, es) {
+  const fecha = date.toLocaleDateString(es ? "es-MX" : "en-US", { weekday: "long", day: "numeric", month: "long" });
+  const msg = es
+    ? `Hola 👋 Soy ${name}. Acabo de agendar una cita para el ${fecha} a las ${time}. Me gustaría confirmarla 😊`
+    : `Hi 👋 I'm ${name}. I just booked an appointment for ${fecha} at ${time}. I'd like to confirm it 😊`;
+  return `https://wa.me/${ANA_WHATSAPP}?text=${encodeURIComponent(msg)}`;
+}
+
+function buildGcalUrl(date, time, name) {
+  const [hm, ampm] = time.split(" ");
+  let [h, m] = hm.split(":").map(Number);
+  if (ampm === "PM" && h !== 12) h += 12;
+  if (ampm === "AM" && h === 12) h = 0;
+  const start = new Date(date); start.setHours(h, m, 0, 0);
+  const end = new Date(start.getTime() + 60 * 60 * 1000);
+  const fmt = (d) => d.toISOString().replace(/[-:.]/g, "").slice(0, 15) + "Z";
+  const text = encodeURIComponent("Cita con Ana Quiroga – Caribe Privé");
+  const details = encodeURIComponent(`Asesoría inmobiliaria con Ana Quiroga, Caribe Privé.${name ? ` (${name})` : ""}`);
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${fmt(start)}/${fmt(end)}&details=${details}&location=${encodeURIComponent("Cancún, México")}`;
+}
+
 export default function Chat({ propertyName = null }) {
   const { lang, t } = useLang();
   const es = lang === "es";
@@ -18,7 +39,7 @@ export default function Chat({ propertyName = null }) {
   const [leadSubmitting, setLeadSubmitting] = useState(false);
   const [booking, setBooking] = useState(false);     // mini-agenda abierta
   const [bookingSubmitting, setBookingSubmitting] = useState(false);
-  const [booked, setBooked] = useState(false);
+  const [booked, setBooked] = useState(null);        // { date, time }
   const [offerBooking, setOfferBooking] = useState(false); // el bot pidió ofrecer cita
 
   const bodyRef = useRef(null);
@@ -109,7 +130,7 @@ export default function Chat({ propertyName = null }) {
           date: date.toISOString(), time,
         }),
       });
-      setBooked(true);
+      setBooked({ date, time });
       setBooking(false);
       const fecha = date.toLocaleDateString(es ? "es-MX" : "en-US", { weekday: "long", day: "numeric", month: "long" });
       setMessages((m) => [...m, {
@@ -197,10 +218,16 @@ export default function Chat({ propertyName = null }) {
             )}
 
             {booked && (
-              <a href={`https://wa.me/${ANA_WHATSAPP}`} target="_blank" rel="noopener noreferrer"
-                className="self-stretch flex items-center justify-center gap-2 text-[12.5px] font-semibold rounded-full py-2.5 bg-[#25D366] text-white hover:opacity-90 transition-opacity">
-                {es ? "Confirmar por WhatsApp" : "Confirm on WhatsApp"}
-              </a>
+              <div className="self-stretch flex flex-col gap-2">
+                <a href={buildGcalUrl(booked.date, booked.time, lead?.name)} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 text-[12.5px] font-medium rounded-full py-2.5 border border-ink/15 bg-white text-ink hover:bg-ink hover:text-paper hover:border-ink transition-colors">
+                  📅 {es ? "Agregar a Google Calendar" : "Add to Google Calendar"}
+                </a>
+                <a href={buildWaUrl({ name: lead?.name || "", date: booked.date, time: booked.time }, es)} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 text-[12.5px] font-semibold rounded-full py-2.5 bg-[#25D366] text-white hover:opacity-90 transition-opacity">
+                  💬 {es ? "Confirmar por WhatsApp" : "Confirm on WhatsApp"}
+                </a>
+              </div>
             )}
           </div>
 
