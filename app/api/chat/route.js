@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { properties } from "@/lib/properties";
+import { getPublicListings } from "@/lib/listings";
 import { createOrUpdateContact, addNoteToContact } from "@/lib/ghl";
 
 export const runtime = "nodejs";
@@ -14,7 +14,7 @@ DATOS DE MERCADO (2025-2026), Caribe Mexicano:
 `;
 
 function buildSystemPrompt(lang) {
-  const propText = properties
+  const propText = getPublicListings()
     .map(
       (p) =>
         `- ${p.name} (${p.zone}): ${p.type.es}. Plusvalía estimada ${p.appreciation}. ${p.cardDesc.es}`

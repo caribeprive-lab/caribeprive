@@ -75,14 +75,14 @@ export default function PropertyView({ property: p }) {
             {p.name}
           </h1>
           {/* Info bar */}
-          {(p.price || p.deliveryStatus || p.projectType) && (
+          {(p.price?.display || p.deliveryStatus || p.projectType) && (
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-white/90" style={{ fontSize: "clamp(13px,1.2vw,16px)" }}>
-              {p.price && (
+              {p.price?.display && (
                 <span className="flex items-center gap-2 font-semibold tracking-[0.08em] uppercase text-yellow">
-                  <IconTag /> {p.price[lang]}
+                  <IconTag /> {p.price.display[lang]}
                 </span>
               )}
-              {p.price && (p.deliveryStatus || p.projectType) && (
+              {p.price?.display && (p.deliveryStatus || p.projectType) && (
                 <span className="text-white/30 font-light">|</span>
               )}
               {p.deliveryStatus && (

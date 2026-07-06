@@ -7,29 +7,31 @@ import Reveal from "@/components/Reveal";
 import PropertyCard from "@/components/PropertyCard";
 import { PageHero, Section, CTABand } from "@/components/content/ui";
 
-export default function PropertiesListing() {
+export default function DevelopmentsListing() {
   const { lang } = useLang();
   const L = (es, en) => (lang === "en" ? en : es);
   const [zone, setZone] = useState("all");
 
-  const all = useMemo(() => getPublicListings(), []);
+  const all = useMemo(
+    () => getPublicListings().filter((item) => item.kind === "development"),
+    [],
+  );
   const zones = useMemo(() => [...new Set(all.map((p) => p.zone))], [all]);
   const visible = zone === "all" ? all : all.filter((p) => p.zone === zone);
 
   return (
     <>
       <PageHero
-        image="/articulos/F.jpg"
-        eyebrow={L("Propiedades", "Properties")}
-        title={L("Desarrollos seleccionados, no un catálogo.", "Selected developments, not a catalog.")}
+        image="/articulos/C.jpg"
+        eyebrow={L("Desarrollos", "Developments")}
+        title={L("Proyectos en preventa seleccionados.", "Selected pre-sale projects.")}
         sub={L(
-          "Solo representamos proyectos que cumplen criterios reales de ubicación, estructura comercial y potencial de plusvalía. Explóralos y agenda una visita.",
-          "We only represent projects that meet real criteria of location, commercial structure and appreciation potential. Explore them and book a visit.",
+          "Desarrollos que cumplen nuestros criterios de ubicación, estructura comercial y potencial de plusvalía en el Caribe Mexicano.",
+          "Developments that meet our criteria for location, commercial structure and appreciation potential in the Mexican Caribbean.",
         )}
       />
 
       <Section className="py-16 md:py-24">
-        {/* Filtros */}
         <Reveal>
           <div className="flex flex-wrap items-center justify-between gap-4 mb-10">
             <div className="flex gap-2.5 flex-wrap">
@@ -44,7 +46,6 @@ export default function PropertiesListing() {
           </div>
         </Reveal>
 
-        {/* Grid */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-7">
           {visible.map((item, i) => (
             <Reveal key={item.slug} delay={(i % 3) * 0.08}>
@@ -55,8 +56,11 @@ export default function PropertiesListing() {
       </Section>
 
       <CTABand
-        title={L("¿No sabes cuál encaja contigo?", "Not sure which one fits you?")}
-        sub={L("Cuéntanos qué buscas y te decimos —con números— cuál tiene más sentido para tu objetivo.", "Tell us what you're after and we'll show you —with numbers— which one makes the most sense for your goal.")}
+        title={L("¿Buscas invertir en preventa?", "Looking to invest in pre-sale?")}
+        sub={L(
+          "Cuéntanos qué tipo de desarrollo buscas y te ayudamos a comparar opciones con números reales.",
+          "Tell us what kind of development you're after and we'll help you compare options with real numbers.",
+        )}
         primary={L("Agendar una llamada", "Book a call")}
         secondary={L("Preguntar al asesor", "Ask the advisor")}
       />
