@@ -10,6 +10,7 @@ const openChat = () => window.dispatchEvent(new CustomEvent("ns-open-chat"));
 const advisors = [
   { photo: "/anafoto.webp", name: "Ana Paula Quiroga" },
   { photo: "/betyfoto.webp", name: "Beatriz Ávila" },
+  { photo: "/franciscofoto.webp", name: "Francisco Avilés" },
 ];
 
 export default function Hero() {
