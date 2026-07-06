@@ -32,7 +32,7 @@ export default function Hero() {
       {/* background image */}
       <div className="absolute inset-0 z-[1]">
         <img
-          src="https://cdn.grupodaxi.com/images/mukta-largas/mukta-larga-grupo-daxi-01.webp"
+          src="/herobg.webp"
           alt=""
           className="h-full w-full object-cover opacity-[0.45] animate-unblur grayscale"
         />
