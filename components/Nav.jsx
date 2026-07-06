@@ -19,10 +19,13 @@ export default function Nav({ dark = false }) {
   const solid = dark || scrolled;
 
   const links = [
-    { href: "/#posicionamiento", label: t("nav.approach") },
-    { href: "/#como-trabajamos", label: t("nav.how") },
+    { href: "/", label: t("nav.home") },
     { href: "/propiedades", label: t("nav.properties") },
-    { href: "/#mercado", label: t("nav.market") },
+    { href: "/desarrollos", label: t("nav.developments") },
+    { href: "/rentas-de-lujo", label: t("nav.rentals") },
+    { href: "/guia-inversionista", label: t("nav.investments") },
+    { href: "/nosotros", label: t("nav.about") },
+    { href: "/agendar", label: t("nav.contact") },
   ];
 
   return (
