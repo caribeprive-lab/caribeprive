@@ -6,12 +6,12 @@ import PropertyView from "@/components/PropertyView";
 import { properties, getProperty } from "@/lib/properties";
 
 export function generateStaticParams() {
-  return properties.map((p) => ({ slug: p.slug }));
+  return properties.filter((p) => p.published !== false).map((p) => ({ slug: p.slug }));
 }
 
 export function generateMetadata({ params }) {
   const p = getProperty(params.slug);
-  if (!p) return {};
+  if (!p || p.published === false) return {};
   const description = p.cardDesc.es;
   return {
     title: p.name, // el template "%s — Caribe Privé" se aplica desde el layout
@@ -35,7 +35,7 @@ export function generateMetadata({ params }) {
 
 export default function PropertyPage({ params }) {
   const property = getProperty(params.slug);
-  if (!property) notFound();
+  if (!property || property.published === false) notFound();
 
   return (
     <>
