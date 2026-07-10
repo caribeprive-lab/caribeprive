@@ -25,6 +25,15 @@ const TEAM = [
       en: "Connects each client with the right property and strategy, and stays for the rental, management and exit. Clear judgment and real numbers, always on the same side.",
     },
   },
+  {
+    photo: "/franciscofoto.webp",
+    name: "Francisco Avilés",
+    role: { es: "Property Matchmaker", en: "Property Matchmaker" },
+    bio: {
+      es: "Con amplia trayectoria en el sector bancario-financiero, aporta una mirada rigurosa a cada decisión de inversión. Bilingüe español/inglés, acompaña por igual a clientes locales e internacionales.",
+      en: "With extensive experience in the banking and financial sector, he brings a rigorous eye to every investment decision. Bilingual in Spanish and English, he supports local and international clients alike.",
+    },
+  },
 ];
 
 export default function AboutUs() {
