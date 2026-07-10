@@ -7,24 +7,24 @@ import Reveal from "@/components/Reveal";
 import PropertyCard from "@/components/PropertyCard";
 import { PageHero, Section, CTABand } from "@/components/content/ui";
 
-export default function PropertiesListing() {
+export default function RentalsListing() {
   const { lang } = useLang();
   const L = (es, en) => (lang === "en" ? en : es);
   const [zone, setZone] = useState("all");
 
-  const all = useMemo(() => getPublicListings({ operation: "venta" }), []);
+  const all = useMemo(() => getPublicListings({ operation: "renta" }), []);
   const zones = useMemo(() => [...new Set(all.map((p) => p.zone))], [all]);
   const visible = zone === "all" ? all : all.filter((p) => p.zone === zone);
 
   return (
     <>
       <PageHero
-        image="/articulos/F.jpg"
-        eyebrow={L("Propiedades", "Properties")}
-        title={L("Desarrollos seleccionados, no un catálogo.", "Selected developments, not a catalog.")}
+        image="/articulos/D.jpg"
+        eyebrow={L("Rentas de lujo", "Luxury rentals")}
+        title={L("Rentas seleccionadas para quedarte como en casa.", "Selected rentals, so you feel right at home.")}
         sub={L(
-          "Solo representamos proyectos que cumplen criterios reales de ubicación, estructura comercial y potencial de plusvalía. Explóralos y agenda una visita.",
-          "We only represent projects that meet real criteria of location, commercial structure and appreciation potential. Explore them and book a visit.",
+          "Casas y departamentos de lujo disponibles para renta en el Caribe Mexicano, con administración y seguimiento continuo.",
+          "Luxury homes and condos available for rent in the Mexican Caribbean, with ongoing management and follow-up.",
         )}
       />
 
@@ -39,7 +39,7 @@ export default function PropertiesListing() {
               ))}
             </div>
             <span className="text-[13px] text-muted">
-              {visible.length} {visible.length === 1 ? L("desarrollo", "development") : L("desarrollos", "developments")}
+              {visible.length} {visible.length === 1 ? L("renta", "rental") : L("rentas", "rentals")}
             </span>
           </div>
         </Reveal>
@@ -55,8 +55,11 @@ export default function PropertiesListing() {
       </Section>
 
       <CTABand
-        title={L("¿No sabes cuál encaja contigo?", "Not sure which one fits you?")}
-        sub={L("Cuéntanos qué buscas y te decimos —con números— cuál tiene más sentido para tu objetivo.", "Tell us what you're after and we'll show you —with numbers— which one makes the most sense for your goal.")}
+        title={L("¿Buscas rentar en el Caribe Mexicano?", "Looking to rent in the Mexican Caribbean?")}
+        sub={L(
+          "Cuéntanos tus fechas y preferencias y te ayudamos a encontrar la renta ideal.",
+          "Tell us your dates and preferences and we'll help you find the ideal rental.",
+        )}
         primary={L("Agendar una llamada", "Book a call")}
         secondary={L("Preguntar al asesor", "Ask the advisor")}
       />

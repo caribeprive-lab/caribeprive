@@ -26,10 +26,17 @@ export default function PropertyCard({ item }) {
           <h3 className="text-[32px] mb-2">{item.name}</h3>
           <p className="text-[13px] text-muted mb-5 flex-1">{item.cardDesc[lang]}</p>
           <div className="flex justify-between items-center border-t border-line pt-4">
-            <div>
-              <div className="font-display text-[30px] text-blue">{item.appreciation}</div>
-              <div className="text-[10px] tracking-[0.08em] uppercase text-muted">{t("props.appreciation")}</div>
-            </div>
+            {item.operation === "renta" ? (
+              <div>
+                <div className="font-display text-[22px] text-blue">{item.price?.display?.[lang]}</div>
+                <div className="text-[10px] tracking-[0.08em] uppercase text-muted">{t("props.rentPrice")}</div>
+              </div>
+            ) : (
+              <div>
+                <div className="font-display text-[30px] text-blue">{item.appreciation}</div>
+                <div className="text-[10px] tracking-[0.08em] uppercase text-muted">{t("props.appreciation")}</div>
+              </div>
+            )}
             <span className="text-blue text-lg group-hover:translate-x-1 transition-transform">→</span>
           </div>
         </div>
