@@ -10,14 +10,14 @@ import { PageHero, Section, CTABand } from "@/components/content/ui";
 export default function DevelopmentsListing() {
   const { lang } = useLang();
   const L = (es, en) => (lang === "en" ? en : es);
-  const [zone, setZone] = useState("all");
+  const [city, setCity] = useState("all");
 
   const all = useMemo(
     () => getPublicListings().filter((item) => item.kind === "development"),
     [],
   );
-  const zones = useMemo(() => [...new Set(all.map((p) => p.zone))], [all]);
-  const visible = zone === "all" ? all : all.filter((p) => p.zone === zone);
+  const cities = useMemo(() => [...new Set(all.map((p) => p.city))], [all]);
+  const visible = city === "all" ? all : all.filter((p) => p.city === city);
 
   return (
     <>
@@ -35,9 +35,9 @@ export default function DevelopmentsListing() {
         <Reveal>
           <div className="flex flex-wrap items-center justify-between gap-4 mb-10">
             <div className="flex gap-2.5 flex-wrap">
-              <Chip active={zone === "all"} onClick={() => setZone("all")}>{L("Todas", "All")}</Chip>
-              {zones.map((z) => (
-                <Chip key={z} active={zone === z} onClick={() => setZone(z)}>{z}</Chip>
+              <Chip active={city === "all"} onClick={() => setCity("all")}>{L("Todas", "All")}</Chip>
+              {cities.map((c) => (
+                <Chip key={c} active={city === c} onClick={() => setCity(c)}>{c}</Chip>
               ))}
             </div>
             <span className="text-[13px] text-muted">

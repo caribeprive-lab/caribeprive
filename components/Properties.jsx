@@ -13,7 +13,7 @@ export default function Properties() {
   const [filter, setFilter] = useState("all");
 
   const all = getPublicListings({ operation: "venta" });
-  const visible = filter === "all" ? all : all.filter((p) => p.zone === filter);
+  const visible = filter === "all" ? all : all.filter((p) => p.city === filter);
 
   return (
     <section id="propiedades" className="py-28 md:py-32 border-t border-line">
