@@ -16,6 +16,7 @@ export default function Market() {
       label: t("market.ind1_label"),
       period: t("market.ind1_period"),
       source: t("market.source_shf"),
+      measures: t("market.measures_appreciation"),
     },
     {
       id: "benito-juarez",
@@ -24,6 +25,7 @@ export default function Market() {
       label: t("market.ind2_label"),
       period: t("market.ind2_period"),
       source: t("market.source_shf"),
+      measures: t("market.measures_appreciation"),
     },
     {
       id: "occ-cancun",
@@ -33,6 +35,7 @@ export default function Market() {
       period: t("market.ind3_period"),
       source: t("market.source_sedetur"),
       clarify: t("market.occupancy_clarify"),
+      measures: t("market.measures_occupancy"),
     },
     {
       id: "occ-puerto-morelos",
@@ -42,15 +45,46 @@ export default function Market() {
       period: t("market.ind4_period"),
       source: t("market.source_sedetur"),
       clarify: t("market.occupancy_clarify"),
+      measures: t("market.measures_occupancy"),
     },
   ];
 
   const demand = [
-    { id: "pax-total", value: t("market.demand1_value"), label: t("market.demand1_label"), period: t("market.demand1_period") },
-    { id: "pax-intl", value: t("market.demand2_value"), label: t("market.demand2_label"), period: t("market.demand2_period") },
-    { id: "pax-yoy", value: t("market.demand3_value"), label: t("market.demand3_label"), period: t("market.demand3_period") },
-    { id: "pax-ca", value: t("market.demand4_value"), label: t("market.demand4_label"), period: t("market.demand4_period") },
+    {
+      id: "pax-total",
+      value: t("market.demand1_value"),
+      label: t("market.demand1_label"),
+      period: t("market.demand1_period"),
+      source: t("market.source_asur"),
+      measures: t("market.demand1_measures"),
+    },
+    {
+      id: "pax-intl",
+      value: t("market.demand2_value"),
+      label: t("market.demand2_label"),
+      period: t("market.demand2_period"),
+      source: t("market.source_asur"),
+      measures: t("market.demand2_measures"),
+    },
+    {
+      id: "pax-yoy",
+      value: t("market.demand3_value"),
+      label: t("market.demand3_label"),
+      period: t("market.demand3_period"),
+      source: t("market.source_asur"),
+      measures: t("market.demand3_measures"),
+    },
+    {
+      id: "pax-ca",
+      value: t("market.demand4_value"),
+      label: t("market.demand4_label"),
+      period: t("market.demand4_period"),
+      source: t("market.source_asur"),
+      measures: t("market.demand4_measures"),
+    },
   ];
+
+  const allSources = [...indicators, ...demand];
 
   return (
     <section id="mercado" className="bg-ink text-white py-28 md:py-32">
@@ -109,21 +143,19 @@ export default function Market() {
           </button>
 
           {sourcesOpen && (
-            <div className="mt-5 grid sm:grid-cols-2 gap-x-8 gap-y-4">
-              {indicators.map((ind) => (
-                <div key={ind.id} className="text-[13px] text-white/60 leading-relaxed">
-                  <span className="text-white/85">{ind.label}</span>
-                  {" — "}
-                  {ind.source}
-                  {" · "}
-                  {ind.period}
-                </div>
-              ))}
-              {demand.map((d) => (
-                <div key={d.id} className="text-[13px] text-white/60 leading-relaxed">
-                  <span className="text-white/85">{d.label}</span>
-                  {" · "}
-                  {d.period}
+            <div className="mt-5 grid sm:grid-cols-2 gap-x-8 gap-y-6">
+              {allSources.map((item) => (
+                <div key={item.id} className="text-[13px] text-white/60 leading-relaxed">
+                  <div className="text-white/85 font-medium mb-1">{item.label}</div>
+                  <div>
+                    <span className="text-white/40">{t("market.label_source")}:</span> {item.source}
+                  </div>
+                  <div>
+                    <span className="text-white/40">{t("market.label_period")}:</span> {item.period}
+                  </div>
+                  <div>
+                    <span className="text-white/40">{t("market.label_measures")}:</span> {item.measures}
+                  </div>
                 </div>
               ))}
             </div>
