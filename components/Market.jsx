@@ -14,6 +14,7 @@ export default function Market() {
       tag: t("market.tag_appreciation"),
       value: t("market.ind1_value"),
       label: t("market.ind1_label"),
+      note: t("market.appreciation_note"),
       period: t("market.ind1_period"),
       source: t("market.source_shf"),
       measures: t("market.measures_appreciation"),
@@ -23,6 +24,7 @@ export default function Market() {
       tag: t("market.tag_appreciation"),
       value: t("market.ind2_value"),
       label: t("market.ind2_label"),
+      note: t("market.appreciation_note"),
       period: t("market.ind2_period"),
       source: t("market.source_shf"),
       measures: t("market.measures_appreciation"),
@@ -104,6 +106,9 @@ export default function Market() {
                 <span className="eyebrow text-white/50">{ind.tag}</span>
                 <span className="font-display text-yellow text-[38px] mt-3 leading-none">{ind.value}</span>
                 <span className="text-white/80 text-[15px] mt-2">{ind.label}</span>
+                {ind.note && (
+                  <span className="text-white/50 text-[11px] mt-1">{ind.note}</span>
+                )}
                 <span className="text-white/45 text-[12px] mt-1">{ind.period}</span>
                 {ind.clarify && (
                   <span className="text-white/40 text-[11px] mt-3 italic leading-snug">{ind.clarify}</span>
