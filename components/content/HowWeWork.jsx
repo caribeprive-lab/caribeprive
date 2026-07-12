@@ -18,7 +18,7 @@ export default function HowWeWork() {
   ];
 
   const fronts = [
-    { t: { es: "Advisory y comercialización", en: "Advisory & sales" }, d: { es: "Representamos desarrollos seleccionados que cumplen criterios de ubicación, estructura comercial, absorción y potencial operativo.", en: "We represent selected developments that meet criteria of location, commercial structure, absorption and operating potential." } },
+    { t: { es: "Asesoría y comercialización", en: "Advisory & sales" }, d: { es: "Representamos desarrollos seleccionados que cumplen criterios de ubicación, estructura comercial, absorción y potencial operativo.", en: "We represent selected developments that meet criteria of location, commercial structure, absorption and operating potential." } },
     { t: { es: "Venta estratégica", en: "Strategic sale" }, d: { es: "Trabajamos propiedades seleccionadas bajo esquemas de representación exclusiva.", en: "We work selected properties under exclusive representation." } },
     { t: { es: "Operación y administración", en: "Operations & management" }, d: { es: "Administramos propiedades residenciales y vacacionales para propietarios que buscan estructura y seguimiento continuo.", en: "We manage residential and vacation properties for owners seeking structure and continuous follow-up." } },
   ];
