@@ -5,7 +5,7 @@ import { useLang } from "@/components/LanguageProvider";
 import { getPublicListings } from "@/lib/listings";
 import Reveal from "@/components/Reveal";
 import PropertyCard from "@/components/PropertyCard";
-import { PageHero, Section, CTABand } from "@/components/content/ui";
+import { PageHero, Section, SectionHead, CTABand } from "@/components/content/ui";
 
 export default function PropertiesListing() {
   const { lang } = useLang();
@@ -13,8 +13,10 @@ export default function PropertiesListing() {
   const [city, setCity] = useState("all");
 
   const all = useMemo(() => getPublicListings({ operation: "venta" }), []);
-  const cities = useMemo(() => [...new Set(all.map((p) => p.city))], [all]);
-  const visible = city === "all" ? all : all.filter((p) => p.city === city);
+  const residential = useMemo(() => all.filter((p) => !p.category?.includes("comercial")), [all]);
+  const comercial = useMemo(() => all.filter((p) => p.category?.includes("comercial")), [all]);
+  const cities = useMemo(() => [...new Set(residential.map((p) => p.city))], [residential]);
+  const visible = city === "all" ? residential : residential.filter((p) => p.city === city);
 
   return (
     <>
@@ -53,6 +55,26 @@ export default function PropertiesListing() {
           ))}
         </div>
       </Section>
+
+      {comercial.length > 0 && (
+        <Section tone="bone" className="py-16 md:py-24 border-t border-line">
+          <SectionHead
+            eyebrow={L("Propiedades", "Properties")}
+            title={L("Comercial", "Commercial")}
+            intro={L(
+              "Locales, edificios y espacios con uso comercial o de servicios.",
+              "Retail spaces, buildings and properties for commercial or service use.",
+            )}
+          />
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-7 mt-10">
+            {comercial.map((item, i) => (
+              <Reveal key={item.slug} delay={(i % 3) * 0.08}>
+                <PropertyCard item={item} />
+              </Reveal>
+            ))}
+          </div>
+        </Section>
+      )}
 
       <CTABand
         title={L("¿No sabes cuál encaja contigo?", "Not sure which one fits you?")}
