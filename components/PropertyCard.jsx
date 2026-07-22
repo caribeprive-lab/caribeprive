@@ -3,8 +3,12 @@
 import Link from "next/link";
 import { useLang } from "@/components/LanguageProvider";
 
-export default function PropertyCard({ item }) {
+export default function PropertyCard({ item, emphasizeRent = false }) {
   const { lang, t } = useLang();
+  const showRent = item.operation === "renta" || (emphasizeRent && item.rentPrice);
+  const priceDisplay = showRent && item.operation !== "renta"
+    ? item.rentPrice?.display?.[lang]
+    : item.price?.display?.[lang];
 
   return (
     <Link href={item.href} className="group block h-full">
@@ -27,9 +31,9 @@ export default function PropertyCard({ item }) {
           <p className="text-[13px] text-muted mb-5 flex-1">{item.cardDesc[lang]}</p>
           <div className="flex justify-between items-center border-t border-line pt-4">
             <div>
-              <div className="font-display text-[22px] text-blue">{item.price?.display?.[lang]}</div>
+              <div className="font-display text-[22px] text-blue">{priceDisplay}</div>
               <div className="text-[10px] tracking-[0.08em] uppercase text-muted">
-                {item.operation === "renta" ? t("props.rentPrice") : t("props.salePrice")}
+                {showRent ? t("props.rentPrice") : t("props.salePrice")}
               </div>
             </div>
             <span className="text-blue text-lg group-hover:translate-x-1 transition-transform">→</span>
