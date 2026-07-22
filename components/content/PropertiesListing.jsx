@@ -12,7 +12,10 @@ export default function PropertiesListing() {
   const L = (es, en) => (lang === "en" ? en : es);
   const [city, setCity] = useState("all");
 
-  const all = useMemo(() => getPublicListings({ operation: "venta" }), []);
+  const all = useMemo(
+    () => getPublicListings({ operation: "venta" }).filter((p) => p.kind !== "development"),
+    [],
+  );
   const residential = useMemo(() => all.filter((p) => !p.category?.includes("comercial")), [all]);
   const comercial = useMemo(() => all.filter((p) => p.category?.includes("comercial")), [all]);
   const cities = useMemo(() => [...new Set(residential.map((p) => p.city))], [residential]);
@@ -23,10 +26,10 @@ export default function PropertiesListing() {
       <PageHero
         image="/articulos/F.jpg"
         eyebrow={L("Propiedades", "Properties")}
-        title={L("Desarrollos seleccionados, no un catálogo.", "Selected developments, not a catalog.")}
+        title={L("Propiedades seleccionadas, no un catálogo.", "Selected properties, not a catalog.")}
         sub={L(
-          "Solo representamos proyectos que cumplen criterios reales de ubicación, estructura comercial y potencial de plusvalía. Explóralos y agenda una visita.",
-          "We only represent projects that meet real criteria of location, commercial structure and appreciation potential. Explore them and book a visit.",
+          "Solo representamos propiedades que cumplen criterios reales de ubicación, estructura comercial y potencial de plusvalía. Explóralas y agenda una visita.",
+          "We only represent properties that meet real criteria of location, commercial structure and appreciation potential. Explore them and book a visit.",
         )}
       />
 
@@ -41,7 +44,7 @@ export default function PropertiesListing() {
               ))}
             </div>
             <span className="text-[13px] text-muted">
-              {visible.length} {visible.length === 1 ? L("desarrollo", "development") : L("desarrollos", "developments")}
+              {visible.length} {visible.length === 1 ? L("propiedad", "property") : L("propiedades", "properties")}
             </span>
           </div>
         </Reveal>

@@ -12,7 +12,7 @@ export default function Properties() {
   const { t } = useLang();
   const [filter, setFilter] = useState("all");
 
-  const all = getPublicListings({ operation: "venta" });
+  const all = getPublicListings({ operation: "venta" }).filter((p) => p.kind !== "development");
   const visible = filter === "all" ? all : all.filter((p) => p.city === filter);
 
   return (
