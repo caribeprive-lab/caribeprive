@@ -16,8 +16,12 @@ export default function PropertiesListing() {
     () => getPublicListings({ operation: "venta" }).filter((p) => p.kind !== "development"),
     [],
   );
-  const residential = useMemo(() => all.filter((p) => !p.category?.includes("comercial")), [all]);
+  const residential = useMemo(
+    () => all.filter((p) => !p.category?.includes("comercial") && !p.category?.includes("lote")),
+    [all],
+  );
   const comercial = useMemo(() => all.filter((p) => p.category?.includes("comercial")), [all]);
+  const lotes = useMemo(() => all.filter((p) => p.category?.includes("lote")), [all]);
   const cities = useMemo(() => [...new Set(residential.map((p) => p.city))], [residential]);
   const visible = city === "all" ? residential : residential.filter((p) => p.city === city);
 
@@ -71,6 +75,26 @@ export default function PropertiesListing() {
           />
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-7 mt-10">
             {comercial.map((item, i) => (
+              <Reveal key={item.slug} delay={(i % 3) * 0.08}>
+                <PropertyCard item={item} />
+              </Reveal>
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {lotes.length > 0 && (
+        <Section tone="bone" className="py-16 md:py-24 border-t border-line">
+          <SectionHead
+            eyebrow={L("Propiedades", "Properties")}
+            title={L("Lotes", "Lots")}
+            intro={L(
+              "Terrenos listos para construir, dentro de residenciales establecidos.",
+              "Ready-to-build lots, inside established residential communities.",
+            )}
+          />
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-7 mt-10">
+            {lotes.map((item, i) => (
               <Reveal key={item.slug} delay={(i % 3) * 0.08}>
                 <PropertyCard item={item} />
               </Reveal>
