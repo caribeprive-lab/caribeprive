@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLang } from "@/components/LanguageProvider";
 import ChatScheduler from "@/components/ChatScheduler";
 
-const ANA_WHATSAPP = "529981543151";
+const ANA_WHATSAPP = "529986467613";
 
 function buildWaUrl({ name, date, time }, es) {
   const fecha = date.toLocaleDateString(es ? "es-MX" : "en-US", { weekday: "long", day: "numeric", month: "long" });

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useLang } from "@/components/LanguageProvider";
 
-const WHATSAPP = "529981543151";
+const WHATSAPP = "529986467613";
 
 const PinIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
