@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 
-const ANA_WHATSAPP = "529981543151";
+const ANA_WHATSAPP = "529986467613";
 
 // ── Íconos outline ─────────────────────────────────────────────────────────────
 const IconBuilding = () => (
