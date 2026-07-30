@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 
 const ANA_WHATSAPP = "529986467613";
+const ADVISOR_EMAIL = "hola@caribeprive.com";
 
 // ── Íconos outline ─────────────────────────────────────────────────────────────
 const IconBuilding = () => (
@@ -118,6 +119,7 @@ export default function AppointmentForm({ inlined = false }) {
 
   const [form, setForm] = useState({
     name: "", whatsapp: "", email: "",
+    contactPref: "whatsapp", // "whatsapp" | "email"
     propertyTypes: [], destinations: [],
     budget: "", date: null, time: "",
   });
@@ -129,7 +131,7 @@ export default function AppointmentForm({ inlined = false }) {
   }));
 
   const canNext = () => {
-    if (step === 0) return form.name.trim() && form.whatsapp.trim();
+    if (step === 0) return form.name.trim() && (form.contactPref === "email" ? form.email.trim() : form.whatsapp.trim());
     if (step === 1) return form.propertyTypes.length > 0;
     if (step === 2) return form.destinations.length > 0 && form.budget;
     if (step === 3) return form.date && form.time;
@@ -176,21 +178,19 @@ export default function AppointmentForm({ inlined = false }) {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
 
-  const waSummary = [
+  const summaryLines = [
     "Hola, acabo de agendar una cita. Les comparto mi resumen:",
     "",
     `Nombre: ${form.name}`,
-    `WhatsApp: ${form.whatsapp}`,
+    form.whatsapp ? `WhatsApp: ${form.whatsapp}` : null,
     form.email ? `Email: ${form.email}` : null,
     `Propiedad: ${form.propertyTypes.join(", ")}`,
     `Destino: ${form.destinations.join(", ")}`,
     `Presupuesto: ${BUDGETS.find(b => b.id === form.budget)?.label || ""}`,
     `Fecha: ${formatDate(form.date)} - ${form.time}`,
-    "",
-    "Me gustaría charlar en este momento.",
   ].filter(Boolean).join("\n");
-  const waMessage = encodeURIComponent(waSummary);
-  const waUrl = `https://wa.me/${ANA_WHATSAPP}?text=${waMessage}`;
+  const waUrl = `https://wa.me/${ANA_WHATSAPP}?text=${encodeURIComponent(summaryLines + "\n\nMe gustaría charlar en este momento.")}`;
+  const mailtoUrl = `mailto:${ADVISOR_EMAIL}?subject=${encodeURIComponent(`Solicitud de cita — ${form.name}`)}&body=${encodeURIComponent(summaryLines)}`;
 
   const gcalUrl = () => {
     if (!form.date || !form.time) return "#";
@@ -224,11 +224,11 @@ export default function AppointmentForm({ inlined = false }) {
             </h2>
             <p className="text-center text-muted text-[15px] mb-8 leading-relaxed">
               Tu cita está agendada para el <strong className="text-ink">{formatDate(form.date)}</strong> a las <strong className="text-ink">{form.time}</strong>.<br />
-              Ana te confirmará por WhatsApp a la brevedad.
+              Ana te confirmará por {form.contactPref === "email" ? "correo" : "WhatsApp"} a la brevedad.
             </p>
             <div className="rounded-2xl border border-white/70 bg-white/55 backdrop-blur p-5 mb-6 text-[13.5px] space-y-3">
               <SRow label="Nombre"      value={form.name} />
-              <SRow label="WhatsApp"    value={form.whatsapp} />
+              {form.whatsapp && <SRow label="WhatsApp" value={form.whatsapp} />}
               {form.email && <SRow label="Email" value={form.email} />}
               <div className="border-t border-line/70 pt-3 space-y-3">
                 <SRow label="Propiedad"   value={form.propertyTypes.join(", ")} />
@@ -245,10 +245,29 @@ export default function AppointmentForm({ inlined = false }) {
                 className="flex items-center justify-center gap-2.5 rounded-full px-6 py-3 border border-ink/15 bg-white/60 backdrop-blur text-ink text-[13px] hover:bg-ink hover:text-paper hover:border-ink transition-colors">
                 <IconCalendar /> Agregar recordatorio a Google Calendar
               </a>
-              <a href={waUrl} target="_blank" rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2.5 rounded-full px-6 py-3.5 bg-[#25D366] text-white text-[13px] font-semibold hover:opacity-90 transition-opacity shadow-[0_8px_20px_rgba(37,211,102,0.3)]">
-                <IconMessage /> Conversar con un asesor por WhatsApp
-              </a>
+              {form.contactPref === "email" ? (
+                <>
+                  <a href={mailtoUrl}
+                    className="flex items-center justify-center gap-2.5 rounded-full px-6 py-3.5 bg-blue text-white text-[13px] font-semibold hover:bg-blue-deep transition-colors shadow-[0_8px_20px_rgba(52,67,81,0.3)]">
+                    <IconMail /> Enviar mi solicitud por correo
+                  </a>
+                  <a href={waUrl} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2.5 rounded-full px-6 py-3 border border-ink/15 bg-white/60 backdrop-blur text-ink text-[13px] hover:bg-ink hover:text-paper hover:border-ink transition-colors">
+                    <IconMessage /> Conversar por WhatsApp
+                  </a>
+                </>
+              ) : (
+                <>
+                  <a href={waUrl} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2.5 rounded-full px-6 py-3.5 bg-[#25D366] text-white text-[13px] font-semibold hover:opacity-90 transition-opacity shadow-[0_8px_20px_rgba(37,211,102,0.3)]">
+                    <IconMessage /> Conversar con un asesor por WhatsApp
+                  </a>
+                  <a href={mailtoUrl}
+                    className="flex items-center justify-center gap-2.5 rounded-full px-6 py-3 border border-ink/15 bg-white/60 backdrop-blur text-ink text-[13px] hover:bg-ink hover:text-paper hover:border-ink transition-colors">
+                    <IconMail /> Enviar mi solicitud por correo
+                  </a>
+                </>
+              )}
               <Link href="/" className="text-center text-[13px] text-muted hover:text-ink transition-colors pt-1">
                 ← Volver al inicio
               </Link>
@@ -362,13 +381,46 @@ function Shell({ inlined, children }) {
 // ── Steps ──────────────────────────────────────────────────────────────────────
 
 function StepContact({ form, update }) {
+  const prefEmail = form.contactPref === "email";
   return (
     <div>
       <p className="text-muted text-[14px] mb-6">Con esta información podremos preparar tu cita personalizada.</p>
       <div className="flex flex-col gap-4">
-        <Field label="Nombre completo *" value={form.name}     onChange={v => update("name", v)}     placeholder="Ana García"        Icon={IconUser} />
-        <Field label="WhatsApp *"        value={form.whatsapp} onChange={v => update("whatsapp", v)} placeholder="+52 998 123 4567"  type="tel"   Icon={IconPhone} />
-        <Field label="Email (opcional)"  value={form.email}    onChange={v => update("email", v)}    placeholder="ana@email.com"     type="email" Icon={IconMail} />
+        <Field label="Nombre completo *" value={form.name} onChange={v => update("name", v)} placeholder="Ana García" Icon={IconUser} />
+
+        <div>
+          <label className="block text-[11px] font-semibold text-muted mb-1.5 tracking-widest uppercase">
+            ¿Cómo prefieres que te contactemos? *
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <button type="button" onClick={() => update("contactPref", "whatsapp")}
+              className={`flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-[13px] transition-all ${
+                !prefEmail ? "border-[#3FB0A0] bg-[#3FB0A0]/10 text-blue font-semibold"
+                           : "border-line text-muted hover:border-[#3FB0A0]/40 hover:text-ink bg-white/60 backdrop-blur"
+              }`}>
+              <IconMessage /> WhatsApp
+            </button>
+            <button type="button" onClick={() => update("contactPref", "email")}
+              className={`flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-[13px] transition-all ${
+                prefEmail ? "border-[#3FB0A0] bg-[#3FB0A0]/10 text-blue font-semibold"
+                          : "border-line text-muted hover:border-[#3FB0A0]/40 hover:text-ink bg-white/60 backdrop-blur"
+              }`}>
+              <IconMail /> Email
+            </button>
+          </div>
+        </div>
+
+        {prefEmail ? (
+          <>
+            <Field label="Email *"              value={form.email}    onChange={v => update("email", v)}    placeholder="ana@email.com"    type="email" Icon={IconMail} />
+            <Field label="Teléfono (opcional)"  value={form.whatsapp} onChange={v => update("whatsapp", v)} placeholder="+1 305 123 4567"  type="tel"   Icon={IconPhone} />
+          </>
+        ) : (
+          <>
+            <Field label="WhatsApp *"        value={form.whatsapp} onChange={v => update("whatsapp", v)} placeholder="+52 998 123 4567" type="tel"   Icon={IconPhone} />
+            <Field label="Email (opcional)"  value={form.email}    onChange={v => update("email", v)}    placeholder="ana@email.com"    type="email" Icon={IconMail} />
+          </>
+        )}
       </div>
     </div>
   );

@@ -16,10 +16,10 @@ export const runtime = "nodejs";
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { name, whatsapp, email, propertyTypes, destinations, budget, date, time, context } = body;
+    const { name, whatsapp, email, contactPref, propertyTypes, destinations, budget, date, time, context } = body;
 
-    // Validación mínima
-    if (!name || !whatsapp || !date || !time) {
+    // Validación mínima: nombre, fecha/hora y al menos un medio de contacto
+    if (!name || !date || !time || (!whatsapp && !email)) {
       return Response.json({ ok: false, error: "Datos incompletos" }, { status: 400 });
     }
 
@@ -69,6 +69,7 @@ export async function POST(req) {
       propsText  && `Tipo de propiedad: ${propsText}`,
       destText   && `Destino: ${destText}`,
       budgetLabel && `Presupuesto: ${budgetLabel}`,
+      contactPref && `Prefiere contacto por: ${contactPref === "email" ? "Email" : "WhatsApp"}`,
       `Origen: ${context ? "Chatbot web" : "Formulario de cita web"}`,
       context && `\n--- Conversación ---\n${context}`,
     ].filter(Boolean).join("\n");
@@ -101,8 +102,9 @@ export async function POST(req) {
         `Propiedad: ${(propertyTypes || []).join(", ")}`,
         `Destino: ${(destinations || []).join(", ")}`,
         `Presupuesto: ${BUDGET_LABELS[budget] || budget}`,
-        `WhatsApp: ${whatsapp}`,
+        whatsapp ? `WhatsApp: ${whatsapp}` : null,
         email ? `Email: ${email}` : null,
+        contactPref ? `Prefiere contacto por: ${contactPref === "email" ? "Email" : "WhatsApp"}` : null,
       ].filter(Boolean).join("\n");
 
       const { appointmentId: apptId, error: apptError } = await createAppointment({
