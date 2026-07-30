@@ -114,6 +114,7 @@ export default function AppointmentForm({ inlined = false }) {
   const [step, setStep]             = useState(0);
   const [dir, setDir]               = useState(1);
   const [done, setDone]             = useState(false);
+  const [sent, setSent]             = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [calMonth, setCalMonth]     = useState(() => { const d = new Date(); d.setDate(1); return d; });
 
@@ -217,14 +218,27 @@ export default function AppointmentForm({ inlined = false }) {
         >
           <div className="rounded-[28px] border border-white/70 bg-white/70 backdrop-blur-xl shadow-[0_24px_70px_rgba(52,67,81,0.16)] p-7 md:p-9">
             <div className="flex justify-center mb-6">
-              <div className="w-16 h-16 rounded-full flex items-center justify-center text-white bg-gradient-to-br from-[#3FB0A0] to-[#2f8f82] shadow-[0_10px_28px_rgba(63,176,160,0.45)]"><IconCheck /></div>
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center text-white shadow-[0_10px_28px_rgba(63,176,160,0.45)] ${
+                sent ? "bg-gradient-to-br from-[#3FB0A0] to-[#2f8f82]" : "bg-gradient-to-br from-[#344351] to-[#232E39]"
+              }`}>
+                {sent ? <IconCheck /> : <IconMessage />}
+              </div>
             </div>
             <h2 className="text-center font-display text-[clamp(28px,5vw,44px)] text-ink mb-2">
-              ¡Todo listo, {firstName}!
+              {sent ? `¡Todo listo, ${firstName}!` : `Un último paso, ${firstName}`}
             </h2>
             <p className="text-center text-muted text-[15px] mb-8 leading-relaxed">
-              Tu cita está agendada para el <strong className="text-ink">{formatDate(form.date)}</strong> a las <strong className="text-ink">{form.time}</strong>.<br />
-              Ana te confirmará por {form.contactPref === "email" ? "correo" : "WhatsApp"} a la brevedad.
+              {sent ? (
+                <>
+                  Tu cita está agendada para el <strong className="text-ink">{formatDate(form.date)}</strong> a las <strong className="text-ink">{form.time}</strong>.<br />
+                  Ana te confirmará por {form.contactPref === "email" ? "correo" : "WhatsApp"} a la brevedad.
+                </>
+              ) : (
+                <>
+                  Elegiste el <strong className="text-ink">{formatDate(form.date)}</strong> a las <strong className="text-ink">{form.time}</strong>, pero tu cita <strong className="text-ink">aún no queda agendada</strong>.<br />
+                  Da clic abajo para enviarnos tu solicitud por {form.contactPref === "email" ? "correo" : "WhatsApp"} y confirmarla.
+                </>
+              )}
             </p>
             <div className="rounded-2xl border border-white/70 bg-white/55 backdrop-blur p-5 mb-6 text-[13.5px] space-y-3">
               <SRow label="Nombre"      value={form.name} />
@@ -245,26 +259,31 @@ export default function AppointmentForm({ inlined = false }) {
                 className="flex items-center justify-center gap-2.5 rounded-full px-6 py-3 border border-ink/15 bg-white/60 backdrop-blur text-ink text-[13px] hover:bg-ink hover:text-paper hover:border-ink transition-colors">
                 <IconCalendar /> Agregar recordatorio a Google Calendar
               </a>
+              {!sent && (
+                <p className="text-center text-[12px] font-semibold tracking-wide uppercase text-[#2f8f82] -mt-1 mb-1">
+                  ↓ Falta este paso para confirmar tu cita
+                </p>
+              )}
               {form.contactPref === "email" ? (
                 <>
-                  <a href={mailtoUrl}
+                  <a href={mailtoUrl} onClick={() => setSent(true)}
                     className="flex items-center justify-center gap-2.5 rounded-full px-6 py-3.5 bg-blue text-white text-[13px] font-semibold hover:bg-blue-deep transition-colors shadow-[0_8px_20px_rgba(52,67,81,0.3)]">
-                    <IconMail /> Enviar mi solicitud por correo
+                    <IconMail /> Enviar mi solicitud y confirmar cita
                   </a>
-                  <a href={waUrl} target="_blank" rel="noopener noreferrer"
+                  <a href={waUrl} target="_blank" rel="noopener noreferrer" onClick={() => setSent(true)}
                     className="flex items-center justify-center gap-2.5 rounded-full px-6 py-3 border border-ink/15 bg-white/60 backdrop-blur text-ink text-[13px] hover:bg-ink hover:text-paper hover:border-ink transition-colors">
-                    <IconMessage /> Conversar por WhatsApp
+                    <IconMessage /> O confirmar por WhatsApp
                   </a>
                 </>
               ) : (
                 <>
-                  <a href={waUrl} target="_blank" rel="noopener noreferrer"
+                  <a href={waUrl} target="_blank" rel="noopener noreferrer" onClick={() => setSent(true)}
                     className="flex items-center justify-center gap-2.5 rounded-full px-6 py-3.5 bg-[#25D366] text-white text-[13px] font-semibold hover:opacity-90 transition-opacity shadow-[0_8px_20px_rgba(37,211,102,0.3)]">
-                    <IconMessage /> Conversar con un asesor por WhatsApp
+                    <IconMessage /> Enviar mi solicitud y confirmar cita
                   </a>
-                  <a href={mailtoUrl}
+                  <a href={mailtoUrl} onClick={() => setSent(true)}
                     className="flex items-center justify-center gap-2.5 rounded-full px-6 py-3 border border-ink/15 bg-white/60 backdrop-blur text-ink text-[13px] hover:bg-ink hover:text-paper hover:border-ink transition-colors">
-                    <IconMail /> Enviar mi solicitud por correo
+                    <IconMail /> O confirmar por correo
                   </a>
                 </>
               )}
