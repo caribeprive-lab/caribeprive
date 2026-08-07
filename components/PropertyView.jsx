@@ -228,13 +228,13 @@ export default function PropertyView({ property: p }) {
               <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-14">
                 <h2 style={{ fontSize: "clamp(30px,4.4vw,58px)" }} className="max-w-[22ch]">
                   {lang === "es"
-                    ? "18 amenidades extra luxury integradas en la naturaleza."
-                    : "18 extra-luxury amenities integrated in nature."}
+                    ? "Amenidades pensadas para cada momento del día."
+                    : "Amenities designed for every moment of the day."}
                 </h2>
                 <p className="text-blue-soft text-[15px] max-w-[42ch] md:text-right">
                   {lang === "es"
-                    ? "Cada espacio fue diseñado para darle sentido a cada momento del día, no solo para acumular lujo."
-                    : "Each space was designed to give meaning to every moment of the day, not just to accumulate luxury."}
+                    ? "Cada espacio fue diseñado para darle sentido a tu día, no solo para acumular lujo."
+                    : "Each space was designed to give meaning to your day, not just to accumulate luxury."}
                 </p>
               </div>
             </Reveal>
