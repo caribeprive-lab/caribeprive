@@ -40,7 +40,10 @@ export default function Chat({ propertyName = null }) {
   const [booking, setBooking] = useState(false);     // mini-agenda abierta
   const [bookingSubmitting, setBookingSubmitting] = useState(false);
   const [booked, setBooked] = useState(null);        // { date, time }
-  const [offerBooking, setOfferBooking] = useState(false); // el bot pidió ofrecer cita
+  const [offerBooking, setOfferBooking] = useState(false); // el bot pidió ofrecer cita ([[BOOK]])
+  const [offerSearchLead, setOfferSearchLead] = useState(false); // el bot ofreció búsqueda personalizada ([[SEARCH_LEAD]])
+  const [lastCriteria, setLastCriteria] = useState(null); // últimos criterios estructurados de search_inventory
+  const [lastMatches, setLastMatches] = useState(null);   // últimos resultados reales de search_inventory
 
   const bodyRef = useRef(null);
 
@@ -85,6 +88,9 @@ export default function Chat({ propertyName = null }) {
       });
       const data = await res.json();
       if (data.offer) setOfferBooking(true);
+      if (data.searchOffer) setOfferSearchLead(true);
+      if (data.criteria) setLastCriteria(data.criteria);
+      if (data.matches) setLastMatches(data.matches);
       setMessages([...next, { role: "assistant", content: data.reply || t("chat.error") }]);
     } catch {
       setMessages([...next, { role: "assistant", content: t("chat.error") }]);
@@ -97,26 +103,38 @@ export default function Chat({ propertyName = null }) {
 
   const captureLead = async ({ name, phone, email }) => {
     setLeadSubmitting(true);
+    const searchMode = offerSearchLead && !offerBooking;
     try {
-      const context = messages.slice(-6)
+      const transcript = messages
+        .filter((m) => m.role === "user" || m.role === "assistant")
         .map((m) => `${m.role === "user" ? "Cliente" : "Ana"}: ${m.content}`)
         .join("\n");
       await fetch("/api/chat-lead", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, phone, email, context }),
+        body: JSON.stringify({
+          name, phone, email,
+          criteria: lastCriteria,
+          matches: lastMatches,
+          transcript,
+        }),
       });
     } catch { /* no bloquear */ }
     setLead({ name, phone, email });
     setLeadSubmitting(false);
     const first = name.split(" ")[0];
+    // La cita es opcional: solo dejamos el botón "Agendar cita" (showBookChip) disponible,
+    // sin forzar la mini-agenda. El lead ya quedó guardado en GHL en este punto.
     setMessages((m) => [...m, {
       role: "assistant",
-      content: es
-        ? `¡Gracias, ${first}! Elige el día y la hora aquí abajo 👇`
-        : `Thanks, ${first}! Pick a day and time below 👇`,
+      content: searchMode
+        ? (es
+            ? `¡Gracias, ${first}! Ya tengo tus datos — vamos a buscar opciones que se ajusten a lo que buscas y te contactamos pronto. Si prefieres, también puedes agendar una llamada abajo 👇`
+            : `Thanks, ${first}! Got your info — we'll search for options that fit what you're looking for and reach out soon. If you'd rather, you can also book a call below 👇`)
+        : (es
+            ? `¡Gracias, ${first}! Ya tengo tus datos. Si quieres agendar una llamada, usa el botón de abajo 👇`
+            : `Thanks, ${first}! Got your info. If you'd like to book a call, use the button below 👇`),
     }]);
-    setBooking(true); // abre la agenda de inmediato (flujo continuo)
   };
 
   const confirmBooking = async (date, time) => {
@@ -159,8 +177,9 @@ export default function Chat({ propertyName = null }) {
   };
 
   const userMsgCount = messages.filter((m) => m.role === "user").length;
-  // El formulario aparece cuando el bot lo señala ([[BOOK]]); o como respaldo tras varias respuestas.
-  const showLeadForm = (offerBooking || userMsgCount >= 5) && !lead && !loading && !booking && !booked;
+  // El formulario aparece cuando el bot lo señala ([[BOOK]] o [[SEARCH_LEAD]]); o como respaldo tras varias respuestas.
+  const showLeadForm = (offerBooking || offerSearchLead || userMsgCount >= 5) && !lead && !loading && !booking && !booked;
+  const leadFormMode = offerSearchLead && !offerBooking ? "search" : "book";
   const showBookChip = lead && !booking && !booked;
 
   return (
@@ -190,7 +209,7 @@ export default function Chat({ propertyName = null }) {
                 <div key={i} className="flex items-end gap-2 self-start max-w-[85%]">
                   <img src="/anachat.png" alt="Ana" className="w-6 h-6 rounded-full object-cover flex-shrink-0 mb-0.5" />
                   <div className="text-[13.5px] px-3.5 py-2.5 rounded-xl rounded-bl-sm whitespace-pre-wrap bg-bone text-ink">
-                    {m.content}
+                    {renderWithLinks(m.content)}
                   </div>
                 </div>
               )
@@ -216,7 +235,7 @@ export default function Chat({ propertyName = null }) {
               </div>
             )}
 
-            {showLeadForm && <LeadForm es={es} submitting={leadSubmitting} onSubmit={captureLead} />}
+            {showLeadForm && <LeadForm es={es} mode={leadFormMode} submitting={leadSubmitting} onSubmit={captureLead} />}
 
             {showBookChip && (
               <button onClick={() => setBooking(true)}
@@ -279,20 +298,25 @@ export default function Chat({ propertyName = null }) {
   );
 }
 
-function LeadForm({ es, submitting, onSubmit }) {
+function LeadForm({ es, mode = "book", submitting, onSubmit }) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
-  const valid = name.trim() && phone.trim();
+  const valid = name.trim() && (phone.trim() || email.trim());
   const field = "w-full border border-line rounded-lg px-3 py-2 text-[12.5px] outline-none bg-white focus:border-[#3FB0A0]";
+  const prompt = mode === "search"
+    ? (es
+        ? "Para buscar opciones personalizadas fuera de nuestro inventario, déjame tu nombre y un teléfono o email 👇"
+        : "To search personalized options outside our inventory, leave your name and a phone or email 👇")
+    : (es
+        ? "Para continuar, déjame tu nombre y un teléfono o email 👇"
+        : "To continue, leave your name and a phone or email 👇");
   return (
     <div className="self-stretch bg-white border border-blue/20 rounded-xl p-3.5 flex flex-col gap-2">
-      <p className="text-[12.5px] text-ink font-medium">
-        {es ? "Para continuar, déjame tu nombre completo y teléfono 👇" : "To continue, leave your full name and phone 👇"}
-      </p>
+      <p className="text-[12.5px] text-ink font-medium">{prompt}</p>
       <input className={field} placeholder={es ? "Nombre completo" : "Full name"} value={name} onChange={(e) => setName(e.target.value)} />
       <input className={field} type="tel" placeholder={es ? "WhatsApp / Teléfono" : "WhatsApp / Phone"} value={phone} onChange={(e) => setPhone(e.target.value)} />
-      <input className={field} type="email" placeholder={es ? "Email (opcional)" : "Email (optional)"} value={email} onChange={(e) => setEmail(e.target.value)} />
+      <input className={field} type="email" placeholder={es ? "Email" : "Email"} value={email} onChange={(e) => setEmail(e.target.value)} />
       <button disabled={!valid || submitting}
         onClick={() => onSubmit({ name: name.trim(), phone: phone.trim(), email: email.trim() })}
         className="text-[12px] font-semibold rounded-full py-2 bg-blue text-white hover:bg-blue-deep transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
@@ -300,6 +324,28 @@ function LeadForm({ es, submitting, onSubmit }) {
       </button>
     </div>
   );
+}
+
+const LISTING_LINK_RE = /\/(?:propiedades|desarrollos)\/[a-z0-9-]+/g;
+
+function renderWithLinks(text = "") {
+  const parts = [];
+  let lastIndex = 0;
+  const re = new RegExp(LISTING_LINK_RE);
+  let match;
+  while ((match = re.exec(text)) !== null) {
+    if (match.index > lastIndex) parts.push(text.slice(lastIndex, match.index));
+    const url = match[0];
+    parts.push(
+      <a key={match.index} href={url} target="_blank" rel="noopener noreferrer"
+        className="underline font-semibold text-blue hover:text-blue-deep">
+        {url}
+      </a>
+    );
+    lastIndex = match.index + url.length;
+  }
+  if (lastIndex < text.length) parts.push(text.slice(lastIndex));
+  return parts;
 }
 
 function IconCalendar() {

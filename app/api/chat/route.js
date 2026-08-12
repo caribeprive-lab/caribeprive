@@ -1,6 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { getPublicListings } from "@/lib/listings";
-import { createOrUpdateContact, addNoteToContact } from "@/lib/ghl";
+import { searchInventory } from "@/lib/matching";
 
 export const runtime = "nodejs";
 
@@ -13,66 +12,82 @@ DATOS DE MERCADO (2025-2026), Caribe Mexicano:
 - El m² en zonas del Tren Maya subió ~400% desde el anuncio. Ocupación de renta vacacional ~75%.
 `;
 
+const SEARCH_TOOL = {
+  name: "search_inventory",
+  description:
+    "Busca en el inventario REAL y publicado de Caribe Privé (propiedades individuales y desarrollos). " +
+    "Es la ÚNICA fuente autorizada para afirmar precios, disponibilidad, amenidades, m² o características de una propiedad — nunca inventes esos datos. " +
+    "Llámala en cuanto tengas al menos ubicación (city y/o zone), tipo de propiedad (category) y presupuesto (budgetMax), sin esperar a tener todos los criterios posibles. " +
+    "Puedes volver a llamarla si el usuario da un nuevo criterio o pide ampliar la búsqueda.",
+  input_schema: {
+    type: "object",
+    properties: {
+      operation: { type: "string", enum: ["venta", "renta"], description: "Operación buscada." },
+      saleType: { type: "string", enum: ["reventa", "preventa"], description: "Solo si el usuario lo especifica explícitamente." },
+      category: {
+        type: "array",
+        items: { type: "string", enum: ["casa", "departamento", "lote", "comercial"] },
+        description: "Tipo(s) de propiedad.",
+      },
+      city: { type: "string", description: "Ej. 'Cancún', 'Puerto Morelos', 'Playa del Carmen', 'Tulum'." },
+      zone: { type: "string", description: "Zona específica dentro de la ciudad, si el usuario la menciona." },
+      budgetMin: { type: "number", description: "Presupuesto mínimo en la moneda que mencionó el usuario (asume USD si no aclara)." },
+      budgetMax: { type: "number", description: "Presupuesto máximo." },
+      bedroomsMin: { type: "number" },
+      bathroomsMin: { type: "number" },
+      purpose: { type: "string", enum: ["vivir", "inversion", "segunda_residencia"] },
+      deliveryPreference: { type: "string", enum: ["inmediata", "preventa", "cualquiera"] },
+    },
+  },
+};
+
 function buildSystemPrompt(lang) {
-  const propText = getPublicListings()
-    .map(
-      (p) =>
-        `- ${p.name} (${p.zone}): ${p.type.es}. Plusvalía estimada ${p.appreciation}. ${p.cardDesc.es}`
-    )
-    .join("\n");
+  const langLine = lang === "en" ? "Respond in English." : "Responde en español.";
 
-  const langLine =
-    lang === "en" ? "Respond in English." : "Responde en español.";
-
-  return `Eres Ana Paula Quiroga, asesora inmobiliaria EXPERTA de Caribe Privé para el Caribe Mexicano (Cancún, Puerto Morelos, Riviera Maya).
-
-TU META: entender primero qué busca la persona y, cuando sea natural, invitarla a una llamada para mostrarle los mejores proyectos.
+  return `Eres Ana Paula Quiroga, asesora inmobiliaria EXPERTA de Caribe Privé para el Caribe Mexicano (Cancún, Puerto Morelos, Riviera Maya). Tu rol es ser un "Property Matchmaker": entender qué busca el prospecto y conectarlo con inventario REAL.
 
 ESTILO (muy importante):
 - Respuestas BREVES: 2-3 frases máximo, UNA pregunta a la vez. Nada de textos largos.
-- Experta y con datos concretos (precio por m², plusvalía, rendimiento), pero sin abrumar.
-- Cálida, cercana y profesional. Claridad radical: si algo no conviene, dilo.
+- Cálida, cercana, experta y con datos concretos, sin abrumar. Claridad radical: si algo no conviene, dilo.
 - ${langLine}
 
-FLUJO NATURAL (síguelo, no lo saltes):
-1. PRIMERO descubre qué busca, con preguntas naturales y de a una: ¿es para vivir, rentar o invertir?, ¿qué zona te llama?, ¿tienes un presupuesto en mente?, ¿para cuándo lo piensas?
-2. Con cada respuesta, da un dato útil y breve. NO recomiendes una propiedad específica hasta entender qué busca.
-3. Cuando ya tengas una idea (o si pide agendar/ver opciones), invítala con naturalidad: "¿Te gustaría que agendemos una llamada para mostrarte los mejores proyectos según lo que buscas?" — y SOLO en ese mensaje añade al final, en una línea aparte, el marcador exacto: [[BOOK]]
+REGLA MÁS IMPORTANTE — CERO ALUCINACIÓN DE INVENTARIO:
+- La única fuente autorizada para afirmar que existe una propiedad, su precio, disponibilidad, m², amenidades o plan de pago es el resultado de la herramienta search_inventory.
+- NUNCA afirmes un precio, característica o disponibilidad que no venga literalmente en el resultado de search_inventory. Si search_inventory no te dio un dato, no lo inventes: di que se confirma en la llamada/cita.
+- El precio que muestres debe ser exactamente el "priceDisplay" (o "rentPriceDisplay") que te devuelve la herramienta, tal cual — no lo recalcules ni lo redondees distinto.
+- Puedes hablar libremente de DATOS DE MERCADO (más abajo) porque son generales, no específicos de una propiedad.
 
-Sobre [[BOOK]]:
-- Es una señal interna (no se muestra al usuario) que abre el formulario de contacto y la agenda dentro del chat.
-- Ponlo SOLO cuando de verdad sea momento de proponer la cita. NUNCA en el primer mensaje, salvo que el usuario pida agendar directamente.
-- No pidas nombre ni teléfono en texto: el formulario lo hace por ti cuando aparece [[BOOK]].
-- Nunca inventes el precio exacto de una unidad: da un rango y propón verlo en la cita.
+FLUJO NATURAL (mínimas preguntas):
+1. Descubre con preguntas breves y de a una: ¿es para vivir, rentar o invertir?, ¿qué ciudad/zona?, ¿tipo de propiedad?, ¿presupuesto aproximado?
+2. En cuanto tengas AL MENOS ubicación + tipo de propiedad + presupuesto, llama a search_inventory. No sigas preguntando más de lo necesario antes de intentar una búsqueda real.
+3. Si el usuario da más criterios después (recámaras, preventa/entrega inmediata, etc.), puedes volver a llamar search_inventory.
 
-DATOS DE MERCADO:
-${MARKET}
+CUANDO search_inventory SÍ ENCUENTRA COINCIDENCIAS (matches.length > 0):
+- Recomienda máximo 3 (las primeras que te da la herramienta, ya vienen priorizadas).
+- Por cada una: nombre, zona, precio (literal de priceDisplay/rentPriceDisplay), 1-2 características relevantes, y explica en una frase por qué encaja.
+- Incluye el link real de cada una en el texto de forma natural, usando exactamente su "url" (ej. "puedes verla aquí: /propiedades/nombre-slug" o "/desarrollos/nombre-slug"). No inventes ni modifiques la url.
+- Cuando sea natural (el usuario mostró interés o ya le presentaste opciones), invita a agendar una llamada para profundizar: "¿Agendamos una llamada para ver estas opciones a detalle?" y SOLO en ese mensaje agrega al final, en línea aparte, el marcador exacto: [[BOOK]]
 
-DESARROLLOS QUE REPRESENTAMOS:
-${propText}
+CUANDO search_inventory DEVUELVE 0 COINCIDENCIAS (matches.length === 0):
+- MUY IMPORTANTE: 0 coincidencias significa EXCLUSIVAMENTE "0 coincidencias adecuadas en el inventario publicado de Caribe Privé". Nunca lo comuniques como "no existe", "no tenemos nada así" o "no hay propiedades" — eso sería falso e innecesariamente negativo.
+- Explica con naturalidad que en el inventario publicado no hay algo que encaje exactamente, PERO que Caribe Privé puede hacer una búsqueda personalizada fuera de su inventario publicado para encontrar opciones que cumplan lo que busca. NUNCA afirmes que esas opciones externas ya existen o están disponibles — solo que se pueden buscar.
+- Si la herramienta te dio un "relaxSuggestion" (ej. ampliar presupuesto o zona), puedes proponerlo como alternativa rápida antes de ofrecer la búsqueda personalizada.
+- Cuando ya exista intención comercial suficiente (ya entendiste razonablemente qué busca, no en el primer mensaje) y quieras ofrecer esa búsqueda personalizada capturando sus datos de contacto, agrega al final de tu respuesta, en línea aparte, el marcador exacto: [[SEARCH_LEAD]]
+- [[BOOK]] y [[SEARCH_LEAD]] son mutuamente excluyentes: nunca los pongas juntos en el mismo mensaje.
 
-Recuerda: descubre primero, da un dato, y cuando sea natural propón la cita con [[BOOK]].`;
+SOBRE LOS MARCADORES [[BOOK]] / [[SEARCH_LEAD]]:
+- Son señales internas (nunca se muestran al usuario, ni las menciones, ni las expliques).
+- No pidas nombre, teléfono o email en tu texto: el marcador abre un formulario en el chat que ya captura esos datos.
+- No los pongas en el primer mensaje ni antes de entender razonablemente qué busca el prospecto.
+
+DATOS DE MERCADO (uso libre, son generales):
+${MARKET}`;
 }
 
-// Extrae __LEAD__ del final del reply y lo separa del texto visible
-function extractLead(rawReply) {
-  const marker = "__LEAD__:";
-  const idx = rawReply.indexOf(marker);
-  if (idx === -1) return { reply: rawReply.trim(), lead: null };
-
-  const replyText = rawReply.slice(0, idx).trim();
-  const jsonStr   = rawReply.slice(idx + marker.length).trim();
-
-  try {
-    const lead = JSON.parse(jsonStr);
-    // Solo válido si tiene al menos nombre y un contacto
-    if (lead.name && (lead.phone || lead.email)) {
-      return { reply: replyText, lead };
-    }
-  } catch {
-    // JSON malformado — ignorar
-  }
-  return { reply: replyText, lead: null };
+function extractMarker(text, marker) {
+  const found = text.includes(marker);
+  const cleaned = found ? text.replace(new RegExp(marker.replace(/[[\]]/g, "\\$&"), "g"), "").trim() : text;
+  return { found, cleaned };
 }
 
 export async function POST(req) {
@@ -98,64 +113,65 @@ export async function POST(req) {
       .slice(-12)
       .map((m) => ({ role: m.role, content: String(m.content || "") }));
 
-    const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 700,
-      system: buildSystemPrompt(lang),
-      messages: cleaned,
+    // Historial de trabajo local para el loop de tool-use de este turno.
+    // No se persiste al frontend — cada turno futuro Claude re-deriva
+    // criterios desde el texto plano de `cleaned`.
+    const workingMessages = [...cleaned];
+
+    let lastCriteria = null;
+    let lastMatches = null;
+    let finalText = "";
+
+    const MAX_ROUNDS = 3;
+    for (let round = 0; round < MAX_ROUNDS; round++) {
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-4-6",
+        max_tokens: 800,
+        system: buildSystemPrompt(lang),
+        tools: [SEARCH_TOOL],
+        messages: workingMessages,
+      });
+
+      const textBlocks = response.content.filter((b) => b.type === "text").map((b) => b.text);
+      const toolUseBlocks = response.content.filter((b) => b.type === "tool_use");
+
+      if (response.stop_reason !== "tool_use" || toolUseBlocks.length === 0) {
+        finalText = textBlocks.join("\n").trim();
+        break;
+      }
+
+      // Claude pidió buscar en inventario real — ejecutamos determinísticamente.
+      workingMessages.push({ role: "assistant", content: response.content });
+
+      const toolResults = toolUseBlocks.map((block) => {
+        const criteria = block.input || {};
+        const result = searchInventory(criteria);
+        lastCriteria = criteria;
+        lastMatches = result.matches;
+        return {
+          type: "tool_result",
+          tool_use_id: block.id,
+          content: JSON.stringify(result),
+        };
+      });
+
+      workingMessages.push({ role: "user", content: toolResults });
+
+      if (round === MAX_ROUNDS - 1) {
+        finalText = textBlocks.join("\n").trim();
+      }
+    }
+
+    const { found: offer, cleaned: afterBook } = extractMarker(finalText, "[[BOOK]]");
+    const { found: searchOffer, cleaned: visibleReply } = extractMarker(afterBook, "[[SEARCH_LEAD]]");
+
+    return Response.json({
+      reply: visibleReply,
+      offer,
+      searchOffer,
+      criteria: lastCriteria,
+      matches: lastMatches,
     });
-
-    const rawReply = response.content
-      .filter((b) => b.type === "text")
-      .map((b) => b.text)
-      .join("\n")
-      .trim();
-
-    // Separar texto visible del bloque de lead
-    const { reply, lead } = extractLead(rawReply);
-
-    // Señal [[BOOK]] → momento de ofrecer formulario + agenda
-    let offer = false;
-    let visibleReply = reply;
-    if (visibleReply.includes("[[BOOK]]")) {
-      offer = true;
-      visibleReply = visibleReply.replace(/\[\[BOOK\]\]/g, "").trim();
-    }
-
-    // Si hay datos de lead → push a GHL en background (no bloquea la respuesta)
-    if (lead) {
-      (async () => {
-        try {
-          // Reconstruir contexto de la conversación para la nota
-          const conversationText = messages
-            .slice(-10)
-            .map((m) => `${m.role === "user" ? "Cliente" : "Ana"}: ${m.content}`)
-            .join("\n");
-
-          const { contactId } = await createOrUpdateContact({
-            name:   lead.name,
-            phone:  lead.phone  || "",
-            email:  lead.email  || "",
-            tags:   ["chatbot-lead"],
-            source: "Caribe Privé - Chatbot Web",
-            customFields: {
-              datos_informativos: "Lead capturado vía chatbot web. Ver la nota del contacto con la conversación completa.",
-            },
-          });
-
-          if (contactId) {
-            await addNoteToContact(
-              contactId,
-              `Lead capturado vía chatbot web.\n\n--- Conversación ---\n${conversationText}`
-            );
-          }
-        } catch (err) {
-          console.error("[chat] GHL push error:", err);
-        }
-      })();
-    }
-
-    return Response.json({ reply: visibleReply, leadCaptured: !!lead, offer });
   } catch (err) {
     console.error("chat error", err);
     return Response.json(

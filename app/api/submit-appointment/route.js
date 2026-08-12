@@ -10,6 +10,7 @@
  */
 
 import { createOrUpdateContact, createAppointment } from "@/lib/ghl";
+import { PROP_SLUGS, DEST_SLUGS } from "@/lib/ghlMappings";
 
 export const runtime = "nodejs";
 
@@ -37,22 +38,6 @@ export async function POST(req) {
       "100_250": 175000,
       "250_500": 375000,
       "500plus": 500000,
-    };
-
-    // Etiqueta del form → valor (slug) del dropdown en GHL
-    const PROP_SLUGS = {
-      "Departamento": "departamento",
-      "Casa / Villa": "casa",
-      "Terreno": "terreno",
-      "Local Comercial": "local_comercial",
-      "Preventa": "otro",
-    };
-    const DEST_SLUGS = {
-      "Cancún": "cancún",
-      "Puerto Morelos": "puerto_morelos",
-      "Playa del Carmen": "playa_del_carmen",
-      "Tulum": "tulum",
-      "Riviera Maya": "otro",
     };
 
     const propsText = (propertyTypes || []).join(", ");
