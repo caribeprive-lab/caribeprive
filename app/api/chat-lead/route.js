@@ -48,6 +48,15 @@ function destSlugFromCriteria(criteria) {
   return slugFromLabelMap(DEST_SLUGS, criteria?.city) || slugFromLabelMap(DEST_SLUGS, criteria?.zone);
 }
 
+// Claude no siempre respeta el tipo declarado en el tool schema (a veces manda
+// budgetMax como string, decimal o un valor fuera de rango). Si el campo
+// Monetary de GHL recibe algo que no puede castear, rechaza el upsert COMPLETO
+// (no solo el campo) y el contacto entero se pierde — de ahí el saneo estricto.
+function sanitizeBudget(value) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? Math.round(n) : null;
+}
+
 const CATEGORY_LABELS = { casa: "Casa", departamento: "Departamento", lote: "Terreno", comercial: "Local Comercial" };
 const OPERATION_LABELS = { venta: "Venta", renta: "Renta" };
 const PURPOSE_LABELS = { vivir: "Vivir", inversion: "Inversión", segunda_residencia: "Segunda residencia" };
@@ -92,20 +101,27 @@ function buildDatosInformativos({ criteria, matches }) {
 
 export async function POST(req) {
   try {
-    const { name, phone = "", email = "", criteria = null, matches = [], transcript = "" } = await req.json();
+    const body = await req.json();
+    const name = body.name || "";
+    const phone = body.phone || "";
+    const email = body.email || "";
+    const criteria = body.criteria || null;
+    const matches = Array.isArray(body.matches) ? body.matches : [];
+    const transcript = body.transcript || "";
 
-    if (!name || !name.trim() || (!phone.trim() && !email.trim())) {
+    if (!name.trim() || (!phone.trim() && !email.trim())) {
       return Response.json({ ok: false, error: "Faltan datos" }, { status: 400 });
     }
 
-    const hasMatches = Array.isArray(matches) && matches.length > 0;
+    const hasMatches = matches.length > 0;
     const tags = ["chatbot-lead", ...(hasMatches ? [] : ["busqueda-personalizada"])];
+    const datosInformativos = buildDatosInformativos({ criteria, matches });
 
     const propSlug = propSlugFromCriteria(criteria);
     const destSlug = destSlugFromCriteria(criteria);
-    const budgetAmount = criteria?.budgetMax ?? criteria?.budgetMin ?? null;
+    const budgetAmount = sanitizeBudget(criteria?.budgetMax ?? criteria?.budgetMin);
 
-    const { contactId, error } = await createOrUpdateContact({
+    let { contactId, error } = await createOrUpdateContact({
       name,
       phone,
       email,
@@ -115,17 +131,33 @@ export async function POST(req) {
         ...(propSlug && { tipo_de_propiedad_de_inters: propSlug }),
         ...(destSlug && { destino_de_inters: destSlug }),
         ...(budgetAmount != null && { presupuesto_del_lead: budgetAmount }),
-        datos_informativos: buildDatosInformativos({ criteria, matches }),
+        datos_informativos: datosInformativos,
       },
     });
 
-    if (error) console.warn("[chat-lead] GHL contacto:", error);
+    // Un customField con un valor que GHL rechaza (ej. Monetary con tipo
+    // inesperado) puede tumbar el upsert COMPLETO y perder el lead entero.
+    // Reintentamos con el mínimo indispensable para no perderlo nunca.
+    if (!contactId) {
+      console.error("[chat-lead] createOrUpdateContact falló con customFields, reintentando sin ellos:", error);
+      ({ contactId, error } = await createOrUpdateContact({
+        name,
+        phone,
+        email,
+        tags,
+        source: "Caribe Privé - Chatbot Web",
+        customFields: { datos_informativos: datosInformativos },
+      }));
+      if (!contactId) {
+        console.error("[chat-lead] createOrUpdateContact falló también en el reintento:", error);
+      }
+    }
 
     if (contactId && transcript) {
       await addNoteToContact(contactId, `Conversación completa — Chatbot Caribe Privé\n\n${transcript}`);
     }
 
-    return Response.json({ ok: true, contactId });
+    return Response.json({ ok: true, contactId, error: contactId ? null : error });
   } catch (err) {
     console.error("[chat-lead] error:", err);
     return Response.json({ ok: true, error: err.message });
