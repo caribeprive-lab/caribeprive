@@ -72,9 +72,14 @@ function buildCriteriaSummary(criteria) {
     lines.push(`Ubicación: ${[criteria.zone, criteria.city].filter(Boolean).join(", ")}`);
   }
   if (criteria.budgetMin != null || criteria.budgetMax != null) {
-    const min = criteria.budgetMin != null ? `$${Number(criteria.budgetMin).toLocaleString("en-US")}` : null;
-    const max = criteria.budgetMax != null ? `$${Number(criteria.budgetMax).toLocaleString("en-US")}` : null;
-    lines.push(`Presupuesto: ${[min, max].filter(Boolean).join(" – ")}`);
+    // Se conserva el importe y la moneda ORIGINALES del prospecto — nunca el
+    // valor normalizado a MXN que usa lib/matching.js internamente para filtrar.
+    const currency = criteria.budgetCurrency === "USD" ? "USD" : "MXN"; // MXN por default (moneda del inventario) si no vino
+    const fmt = (n) => `$${Number(n).toLocaleString("en-US")}`;
+    const min = criteria.budgetMin != null ? fmt(criteria.budgetMin) : null;
+    const max = criteria.budgetMax != null ? fmt(criteria.budgetMax) : null;
+    const range = [min, max].filter(Boolean).join(" – ");
+    lines.push(`Presupuesto: ${currency === "USD" ? `USD ${range}` : `${range} MXN`}`);
   }
   if (criteria.bedroomsMin != null) lines.push(`Recámaras mín: ${criteria.bedroomsMin}`);
   if (criteria.purpose) lines.push(`Propósito: ${PURPOSE_LABELS[criteria.purpose] || criteria.purpose}`);
@@ -119,6 +124,9 @@ export async function POST(req) {
 
     const propSlug = propSlugFromCriteria(criteria);
     const destSlug = destSlugFromCriteria(criteria);
+    // Importe ORIGINAL del prospecto (nunca el normalizado a MXN que usa
+    // lib/matching.js para filtrar) — criteria.budgetMax/budgetMin nunca
+    // pasan por lib/currency.js, así que ya vienen en la moneda del usuario.
     const budgetAmount = sanitizeBudget(criteria?.budgetMax ?? criteria?.budgetMin);
 
     let { contactId, error } = await createOrUpdateContact({

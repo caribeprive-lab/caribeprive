@@ -17,7 +17,8 @@ const SEARCH_TOOL = {
   description:
     "Busca en el inventario REAL y publicado de Caribe Privé (propiedades individuales y desarrollos). " +
     "Es la ÚNICA fuente autorizada para afirmar precios, disponibilidad, amenidades, m² o características de una propiedad — nunca inventes esos datos. " +
-    "Llámala en cuanto tengas al menos ubicación (city y/o zone), tipo de propiedad (category) y presupuesto (budgetMax), sin esperar a tener todos los criterios posibles. " +
+    "Llámala en cuanto tengas al menos ubicación (city y/o zone), tipo de propiedad (category) y presupuesto (budgetMax + budgetCurrency), sin esperar a tener todos los criterios posibles. " +
+    "Si el usuario dio presupuesto pero su moneda es ambigua, NO llames a esta herramienta todavía — pregunta primero si es MXN o USD. " +
     "Puedes volver a llamarla si el usuario da un nuevo criterio o pide ampliar la búsqueda.",
   input_schema: {
     type: "object",
@@ -31,8 +32,16 @@ const SEARCH_TOOL = {
       },
       city: { type: "string", description: "Ej. 'Cancún', 'Puerto Morelos', 'Playa del Carmen', 'Tulum'." },
       zone: { type: "string", description: "Zona específica dentro de la ciudad, si el usuario la menciona." },
-      budgetMin: { type: "number", description: "Presupuesto mínimo en la moneda que mencionó el usuario (asume USD si no aclara)." },
-      budgetMax: { type: "number", description: "Presupuesto máximo." },
+      budgetMin: { type: "number", description: "Presupuesto mínimo, EXACTAMENTE con el número que dijo el usuario, en su moneda original — nunca lo conviertas tú. Úsalo junto con budgetCurrency." },
+      budgetMax: { type: "number", description: "Presupuesto máximo, EXACTAMENTE con el número que dijo el usuario, en su moneda original — nunca lo conviertas tú. Úsalo junto con budgetCurrency." },
+      budgetCurrency: {
+        type: "string",
+        enum: ["MXN", "USD"],
+        description:
+          "Moneda de budgetMin/budgetMax, detectada de lo que dijo el usuario. 'MDP', 'millones de pesos', 'pesos', 'MXN' → \"MXN\". " +
+          "'dólares', 'USD', 'dlls' → \"USD\". La conversión entre monedas la hace el servidor, no tú — nunca hagas tú el cálculo. " +
+          "Si no puedes determinar la moneda con certeza (ej. \"$4.5M\" sin más contexto), NO llames a search_inventory todavía: pregúntale al usuario si es en pesos o dólares.",
+      },
       bedroomsMin: { type: "number" },
       bathroomsMin: { type: "number" },
       purpose: { type: "string", enum: ["vivir", "inversion", "segunda_residencia"] },
@@ -57,21 +66,29 @@ REGLA MÁS IMPORTANTE — CERO ALUCINACIÓN DE INVENTARIO:
 - El precio que muestres debe ser exactamente el "priceDisplay" (o "rentPriceDisplay") que te devuelve la herramienta, tal cual — no lo recalcules ni lo redondees distinto.
 - Puedes hablar libremente de DATOS DE MERCADO (más abajo) porque son generales, no específicos de una propiedad.
 
+MONEDA DEL PRESUPUESTO (muy importante):
+- Identifica la moneda por lo que el usuario realmente dijo: "MDP", "millones de pesos", "pesos", "MXN" → budgetCurrency "MXN". "USD", "dólares", "dlls" → budgetCurrency "USD".
+- Manda budgetMin/budgetMax con el número EXACTO que dijo el usuario, en su moneda original, junto con budgetCurrency. NUNCA conviertas tú un importe entre pesos y dólares — esa conversión la hace el servidor internamente.
+- Si la moneda es ambigua (ej. "$4.5M" sin más contexto en la conversación) y no puedes inferirla con seguridad, NO llames a search_inventory todavía: pregúntale primero si es en pesos o en dólares.
+- Si de todas formas llamas a search_inventory con un presupuesto sin moneda clara, el sistema NO va a adivinar: te devolverá "needsClarification": true. En ese caso no presentes ninguna propiedad — pregúntale la moneda al usuario y vuelve a llamar la herramienta solo cuando la confirme.
+- Si el resultado trae "budgetCurrencyUnavailable": true, el presupuesto en USD no se pudo verificar por un tema técnico temporal del sistema (no es tu culpa ni la del usuario). En ese caso sí puedes mostrar las opciones que encontraste, pero NUNCA digas que están dentro de su presupuesto — acláralo ("el presupuesto en dólares lo confirmamos contigo en la llamada/con tu asesor") y sigue el flujo normal.
+
 FLUJO NATURAL (mínimas preguntas):
-1. Descubre con preguntas breves y de a una: ¿es para vivir, rentar o invertir?, ¿qué ciudad/zona?, ¿tipo de propiedad?, ¿presupuesto aproximado?
-2. En cuanto tengas AL MENOS ubicación + tipo de propiedad + presupuesto, llama a search_inventory. No sigas preguntando más de lo necesario antes de intentar una búsqueda real.
+1. Descubre con preguntas breves y de a una: ¿es para vivir, rentar o invertir?, ¿qué ciudad/zona?, ¿tipo de propiedad?, ¿presupuesto aproximado (y en qué moneda)?
+2. En cuanto tengas AL MENOS ubicación + tipo de propiedad + presupuesto (con moneda clara), llama a search_inventory. No sigas preguntando más de lo necesario antes de intentar una búsqueda real.
 3. Si el usuario da más criterios después (recámaras, preventa/entrega inmediata, etc.), puedes volver a llamar search_inventory.
 
 CUANDO search_inventory SÍ ENCUENTRA COINCIDENCIAS (matches.length > 0):
-- Recomienda máximo 3 (las primeras que te da la herramienta, ya vienen priorizadas).
+- Recomienda máximo 3 (las primeras que te da la herramienta, ya vienen priorizadas: precio confirmado dentro de presupuesto primero, alternativas con precio por confirmar después).
 - Por cada una: nombre, zona, precio (literal de priceDisplay/rentPriceDisplay), 1-2 características relevantes, y explica en una frase por qué encaja.
+- Si una opción tiene "budgetStatus": "unknown", su precio es "a solicitud" — NUNCA digas que está dentro del presupuesto ni inventes una cifra. Acláralo explícitamente (ej. "precio por confirmar con tu asesor") y preséntala como alternativa a explorar, no como coincidencia exacta de presupuesto.
 - Incluye el link real de cada una en el texto de forma natural, usando exactamente su "url" (ej. "puedes verla aquí: /propiedades/nombre-slug" o "/desarrollos/nombre-slug"). No inventes ni modifiques la url.
 - Cuando sea natural (el usuario mostró interés o ya le presentaste opciones), invita a agendar una llamada para profundizar: "¿Agendamos una llamada para ver estas opciones a detalle?" y SOLO en ese mensaje agrega al final, en línea aparte, el marcador exacto: [[BOOK]]
 
 CUANDO search_inventory DEVUELVE 0 COINCIDENCIAS (matches.length === 0):
 - MUY IMPORTANTE: 0 coincidencias significa EXCLUSIVAMENTE "0 coincidencias adecuadas en el inventario publicado de Caribe Privé". Nunca lo comuniques como "no existe", "no tenemos nada así" o "no hay propiedades" — eso sería falso e innecesariamente negativo.
 - Explica con naturalidad que en el inventario publicado no hay algo que encaje exactamente, PERO que Caribe Privé puede hacer una búsqueda personalizada fuera de su inventario publicado para encontrar opciones que cumplan lo que busca. NUNCA afirmes que esas opciones externas ya existen o están disponibles — solo que se pueden buscar.
-- Si la herramienta te dio un "relaxSuggestion" (ej. ampliar presupuesto o zona), puedes proponerlo como alternativa rápida antes de ofrecer la búsqueda personalizada.
+- Si la herramienta te dio un "relaxSuggestion" (ej. ampliar presupuesto o zona), puedes proponerlo como alternativa rápida antes de ofrecer la búsqueda personalizada — pero SIEMPRE diciéndolo explícitamente, nunca presentando esa alternativa como si cumpliera el criterio original. Ejemplo: "No encontré departamentos dentro de ese presupuesto exactamente en Puerto Morelos, pero tengo estas alternativas...". Nunca presentes una propiedad que incumple un criterio duro (tipo, ubicación, operación) como si fuera un match exacto.
 - Cuando ya exista intención comercial suficiente (ya entendiste razonablemente qué busca, no en el primer mensaje) y quieras ofrecer esa búsqueda personalizada capturando sus datos de contacto, agrega al final de tu respuesta, en línea aparte, el marcador exacto: [[SEARCH_LEAD]]
 - [[BOOK]] y [[SEARCH_LEAD]] son mutuamente excluyentes: nunca los pongas juntos en el mismo mensaje.
 
@@ -145,13 +162,27 @@ export async function POST(req) {
 
       const toolResults = toolUseBlocks.map((block) => {
         const criteria = block.input || {};
-        const result = searchInventory(criteria);
+        const { debug, ...resultForClaude } = searchInventory(criteria);
         lastCriteria = criteria;
-        lastMatches = result.matches;
+        // needsClarification no trae `matches` — no pisar lastMatches en ese caso.
+        if (Array.isArray(resultForClaude.matches)) lastMatches = resultForClaude.matches;
+
+        // Observabilidad server-side de cada búsqueda — nunca se manda a Claude
+        // ni contiene secretos. Ver Vercel Function Logs de /api/chat.
+        console.log("[search_inventory]", JSON.stringify({
+          criteria,
+          needsClarification: !!resultForClaude.needsClarification,
+          budgetCurrencyUnavailable: !!resultForClaude.budgetCurrencyUnavailable,
+          debug: debug ?? null,
+          totalBeforeCap: resultForClaude.totalBeforeCap ?? null,
+          resultSlugs: Array.isArray(resultForClaude.matches) ? resultForClaude.matches.map((m) => m.slug) : [],
+          relaxSuggestionTriggered: !!resultForClaude.relaxSuggestion,
+        }));
+
         return {
           type: "tool_result",
           tool_use_id: block.id,
-          content: JSON.stringify(result),
+          content: JSON.stringify(resultForClaude),
         };
       });
 
