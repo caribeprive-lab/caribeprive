@@ -132,6 +132,49 @@ test("(extra) USD con budgetCurrency dado pero SIN USD_TO_MXN_RATE → budgetCur
   assert.equal(item.budgetStatus, null, "sin poder normalizar el presupuesto, no se debe afirmar ningún budgetStatus");
 });
 
+// Ciudad fuera de inventario: NUNCA se relaja "city" en findRelaxSuggestion,
+// sin importar si Mérida, CDMX, Miami, etc. son o no zonas cubiertas — no
+// hay ninguna lista de zonas permitidas, la regla es genérica.
+test("city fuera de inventario (Mérida) → 0 matches y relaxSuggestion NUNCA sugiere cambiar de ciudad", () => {
+  const result = searchInventory({
+    city: "Mérida",
+    category: ["departamento"],
+    budgetMax: 4500000,
+    budgetCurrency: "MXN",
+  });
+  assert.equal(result.matches.length, 0, "no debía haber matches en Mérida (no hay inventario ahí)");
+  assert.ok(
+    !result.relaxSuggestion || result.relaxSuggestion.field !== "city",
+    `relaxSuggestion nunca debe sugerir cambiar de ciudad, obtuve: ${JSON.stringify(result.relaxSuggestion)}`
+  );
+  // En este caso ninguna otra relajación (presupuesto, categoría) encuentra
+  // nada tampoco dentro de Mérida — por eso el resultado correcto es null,
+  // no una sugerencia de otra ciudad.
+  assert.equal(result.relaxSuggestion, null, `esperaba relaxSuggestion null, obtuve: ${JSON.stringify(result.relaxSuggestion)}`);
+});
+
+test("cualquier ciudad sin match (CDMX, Miami) → relaxSuggestion nunca es field:'city'", () => {
+  for (const city of ["CDMX", "Miami", "Madrid", "Guadalajara"]) {
+    const result = searchInventory({ city, category: ["casa"] });
+    assert.ok(
+      !result.relaxSuggestion || result.relaxSuggestion.field !== "city",
+      `[${city}] relaxSuggestion nunca debe sugerir cambiar de ciudad, obtuve: ${JSON.stringify(result.relaxSuggestion)}`
+    );
+  }
+});
+
+// searchInventory no debe mutar el objeto criteria que recibe — la ciudad
+// que llega del prospecto se conserva exactamente igual después de la
+// búsqueda. (La preservación end-to-end hacia GHL/el frontend depende de
+// que app/api/chat/route.js reenvíe `criteria` tal cual — ver route.js:166,
+// sin cambios en esta ronda — esto prueba que matching.js no le da motivo
+// para hacer lo contrario.)
+test("searchInventory conserva intacto el criteria.city original (no lo muta)", () => {
+  const criteria = { city: "Mérida", category: ["departamento"], budgetMax: 4500000, budgetCurrency: "MXN" };
+  searchInventory(criteria);
+  assert.equal(criteria.city, "Mérida", "el objeto criteria original no debía modificarse");
+});
+
 console.log("\n--- D-F de la ronda anterior (interpretación de lenguaje natural: \"4.5 millones de pesos\", \"250,000 dólares\", \"$4.5M\" ambiguo) ---");
 console.log("    No aplican a lib/matching.js — Claude nunca manda texto libre a search_inventory, solo {budgetMax, budgetCurrency}");
 console.log("    ya estructurados. Se validan con pruebas de conversación real (fuera del alcance de este script).");
