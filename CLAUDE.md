@@ -79,6 +79,11 @@ public/                      imágenes (fotos en WebP; articulos/ = fotos del de
 - **Propiedad nueva**: copia un objeto en `lib/properties.js`, cambia `slug`,
   textos, imágenes y datos. La **card** (home y `/propiedades`) y la **landing**
   (`/propiedades/<slug>`) se generan solas. Cada texto es `{ es, en }`.
+- **Retirar una propiedad** (vendida/rentada): borra su objeto en
+  `lib/properties.js` y su carpeta `public/propiedades/<slug>/`; si su zona en
+  `lib/zones.js` queda sin uso, bórrala también. Agrega el slug a
+  `REMOVED_PROPERTY_SLUGS` en `next.config.mjs` → el link viejo redirige con
+  **301** a `/propiedades` (no `permanent: true`, que responde 308).
 - **Textos del sitio**: `lib/i18n.js` (diccionario bilingüe). Toggle ES/EN en el
   Nav vía `components/LanguageProvider.jsx` (persiste en localStorage).
 - **Marca/paleta**: colores en `tailwind.config.js` (`blue` = slate #344351,
