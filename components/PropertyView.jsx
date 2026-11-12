@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useLang } from "@/components/LanguageProvider";
 import Reveal from "@/components/Reveal";
 import AppointmentForm from "@/components/AppointmentForm";
 import PropertyMap from "@/components/PropertyMap";
+import GalleryLightbox from "@/components/GalleryLightbox";
 
 const openChat = () => window.dispatchEvent(new CustomEvent("ns-open-chat"));
 
@@ -45,6 +47,7 @@ function IconBuilding() {
 
 export default function PropertyView({ property: p }) {
   const { lang, t } = useLang();
+  const [photoIndex, setPhotoIndex] = useState(null); // null = visor cerrado
 
   return (
     <main>
@@ -189,9 +192,14 @@ export default function PropertyView({ property: p }) {
           </div>
 
           <Reveal delay={0.1}>
-            <div className="mt-16 grid grid-cols-3 gap-2 h-[420px] md:h-[580px]">
+            <div className="relative mt-16 grid grid-cols-3 gap-2 h-[420px] md:h-[580px]">
               {/* Imagen principal */}
-              <div className="col-span-2 overflow-hidden rounded-none">
+              <button
+                type="button"
+                onClick={() => setPhotoIndex(0)}
+                aria-label={lang === "es" ? "Ampliar foto 1" : "Enlarge photo 1"}
+                className="col-span-2 overflow-hidden rounded-none cursor-zoom-in"
+              >
                 <img
                   src={p.gallery[0]}
                   alt=""
@@ -199,11 +207,17 @@ export default function PropertyView({ property: p }) {
                   decoding="async"
                   className="w-full h-full object-cover hover:scale-105 transition-transform duration-700 ease-out"
                 />
-              </div>
+              </button>
               {/* Dos imágenes secundarias */}
               <div className="flex flex-col gap-2">
                 {p.gallery.slice(1, 3).map((g, i) => (
-                  <div key={i} className="flex-1 overflow-hidden rounded-none">
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setPhotoIndex(i + 1)}
+                    aria-label={lang === "es" ? `Ampliar foto ${i + 2}` : `Enlarge photo ${i + 2}`}
+                    className="flex-1 min-h-0 overflow-hidden rounded-none cursor-zoom-in"
+                  >
                     <img
                       src={g}
                       alt=""
@@ -211,9 +225,23 @@ export default function PropertyView({ property: p }) {
                       decoding="async"
                       className="w-full h-full object-cover hover:scale-105 transition-transform duration-700 ease-out"
                     />
-                  </div>
+                  </button>
                 ))}
               </div>
+              {/* Abre el visor con TODA la galería (la grid solo muestra 3) */}
+              <button
+                type="button"
+                onClick={() => setPhotoIndex(0)}
+                className="absolute bottom-3 right-3 md:bottom-4 md:right-4 flex items-center gap-2 bg-white/95 text-blue text-xs md:text-sm font-medium px-3 py-2 md:px-4 md:py-2.5 shadow-lg hover:bg-white transition-colors"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="7" height="7" />
+                  <rect x="14" y="3" width="7" height="7" />
+                  <rect x="14" y="14" width="7" height="7" />
+                  <rect x="3" y="14" width="7" height="7" />
+                </svg>
+                {lang === "es" ? "Ver todas las fotos" : "View all photos"} ({p.gallery.length})
+              </button>
             </div>
           </Reveal>
         </div>
@@ -306,6 +334,14 @@ export default function PropertyView({ property: p }) {
           <AppointmentForm inlined />
         </div>
       </section>
+
+      <GalleryLightbox
+        images={p.gallery}
+        index={photoIndex}
+        onIndexChange={setPhotoIndex}
+        onClose={() => setPhotoIndex(null)}
+        lang={lang}
+      />
     </main>
   );
 }
