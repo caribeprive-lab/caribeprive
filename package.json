@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "node scripts/test-matching.mjs"
+    "test": "node scripts/test-matching.mjs && node scripts/test-fx.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",

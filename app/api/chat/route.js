@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { searchInventory } from "@/lib/matching";
+import { getUsdMxnRate } from "@/lib/fxRate";
+import { EXCHANGE_RATE_TOOL, executeTool, lazyFx } from "@/lib/chatTools";
 
 export const runtime = "nodejs";
 
@@ -72,6 +73,12 @@ MONEDA DEL PRESUPUESTO (muy importante):
 - Si la moneda es ambigua (ej. "$4.5M" sin más contexto en la conversación) y no puedes inferirla con seguridad, NO llames a search_inventory todavía: pregúntale primero si es en pesos o en dólares.
 - Si de todas formas llamas a search_inventory con un presupuesto sin moneda clara, el sistema NO va a adivinar: te devolverá "needsClarification": true. En ese caso no presentes ninguna propiedad — pregúntale la moneda al usuario y vuelve a llamar la herramienta solo cuando la confirme.
 - Si el resultado trae "budgetCurrencyUnavailable": true, el presupuesto en USD no se pudo verificar por un tema técnico temporal del sistema (no es tu culpa ni la del usuario). En ese caso sí puedes mostrar las opciones que encontraste, pero NUNCA digas que están dentro de su presupuesto — acláralo ("el presupuesto en dólares lo confirmamos contigo en la llamada/con tu asesor") y sigue el flujo normal.
+- Si el resultado trae "exchangeRate" con "officialBanxicoFix": false, la conversión se hizo con una tasa manual de referencia, NO con el FIX oficial: puedes mostrar las opciones, pero aclara que el equivalente en pesos es aproximado y que el asesor confirma el tipo de cambio exacto.
+
+TIPO DE CAMBIO:
+- Si el usuario pregunta qué tipo de cambio usan o cuánto está el dólar, llama a get_exchange_rate y responde con el valor ("usdMxn"), la fecha ("date") y la fuente ("source") tal cual vienen. Si "officialBanxicoFix" es true, di que es el tipo de cambio FIX publicado por el Banco de México (Banxico) en esa fecha.
+- Si "officialBanxicoFix" es false, NUNCA lo llames FIX ni digas que viene de Banxico: di que es una tasa de referencia aproximada y que el asesor confirma el tipo de cambio exacto. Si "available" es false, di que en este momento no puedes consultarlo y que el asesor lo confirma.
+- Nunca inventes ni estimes un tipo de cambio por tu cuenta, ni uses datos de tu memoria.
 
 FLUJO NATURAL (mínimas preguntas):
 1. Descubre con preguntas breves y de a una: ¿es para vivir, rentar o invertir?, ¿qué ciudad/zona?, ¿tipo de propiedad?, ¿presupuesto aproximado (y en qué moneda)?
@@ -136,6 +143,10 @@ export async function POST(req) {
     // criterios desde el texto plano de `cleaned`.
     const workingMessages = [...cleaned];
 
+    // Cotización USD→MXN: se consulta como máximo una vez por turno y solo si
+    // una herramienta la necesita (búsqueda en USD o pregunta por el tipo de cambio).
+    const getFx = lazyFx(getUsdMxnRate);
+
     let lastCriteria = null;
     let lastMatches = null;
     let finalText = "";
@@ -146,7 +157,7 @@ export async function POST(req) {
         model: "claude-sonnet-4-6",
         max_tokens: 800,
         system: buildSystemPrompt(lang),
-        tools: [SEARCH_TOOL],
+        tools: [SEARCH_TOOL, EXCHANGE_RATE_TOOL],
         messages: workingMessages,
       });
 
@@ -161,31 +172,36 @@ export async function POST(req) {
       // Claude pidió buscar en inventario real — ejecutamos determinísticamente.
       workingMessages.push({ role: "assistant", content: response.content });
 
-      const toolResults = toolUseBlocks.map((block) => {
-        const criteria = block.input || {};
-        const { debug, ...resultForClaude } = searchInventory(criteria);
-        lastCriteria = criteria;
-        // needsClarification no trae `matches` — no pisar lastMatches en ese caso.
-        if (Array.isArray(resultForClaude.matches)) lastMatches = resultForClaude.matches;
+      const toolResults = [];
+      for (const block of toolUseBlocks) {
+        const { result: resultForClaude, debug, criteria } = await executeTool(block, { getFx });
 
-        // Observabilidad server-side de cada búsqueda — nunca se manda a Claude
-        // ni contiene secretos. Ver Vercel Function Logs de /api/chat.
-        console.log("[search_inventory]", JSON.stringify({
-          criteria,
-          needsClarification: !!resultForClaude.needsClarification,
-          budgetCurrencyUnavailable: !!resultForClaude.budgetCurrencyUnavailable,
-          debug: debug ?? null,
-          totalBeforeCap: resultForClaude.totalBeforeCap ?? null,
-          resultSlugs: Array.isArray(resultForClaude.matches) ? resultForClaude.matches.map((m) => m.slug) : [],
-          relaxSuggestionTriggered: !!resultForClaude.relaxSuggestion,
-        }));
+        if (block.name === "search_inventory") {
+          lastCriteria = criteria;
+          // needsClarification no trae `matches` — no pisar lastMatches en ese caso.
+          if (Array.isArray(resultForClaude.matches)) lastMatches = resultForClaude.matches;
 
-        return {
+          // Observabilidad server-side de cada búsqueda — nunca se manda a Claude
+          // ni contiene secretos. Ver Vercel Function Logs de /api/chat.
+          console.log("[search_inventory]", JSON.stringify({
+            criteria,
+            needsClarification: !!resultForClaude.needsClarification,
+            budgetCurrencyUnavailable: !!resultForClaude.budgetCurrencyUnavailable,
+            debug: debug ?? null,
+            totalBeforeCap: resultForClaude.totalBeforeCap ?? null,
+            resultSlugs: Array.isArray(resultForClaude.matches) ? resultForClaude.matches.map((m) => m.slug) : [],
+            relaxSuggestionTriggered: !!resultForClaude.relaxSuggestion,
+          }));
+        } else {
+          console.log(`[${block.name}]`, JSON.stringify(debug));
+        }
+
+        toolResults.push({
           type: "tool_result",
           tool_use_id: block.id,
           content: JSON.stringify(resultForClaude),
-        };
-      });
+        });
+      }
 
       workingMessages.push({ role: "user", content: toolResults });
 
