@@ -43,6 +43,8 @@ Producción: `npm run build && npm start`.
 | `GHL_CALENDAR_ID` | Agendar citas | Calendars → [calendario] → Settings |
 | `GHL_ASSIGNED_USER_ID` | (Opcional) asignar usuario | En calendario **round robin** déjala VACÍA |
 | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Mapas | `AIza...` (única que se expone al navegador) |
+| `BANXICO_TOKEN` | FIX oficial USD→MXN (chatbot) | Token de la API SIE de Banxico. Solo servidor |
+| `USD_TO_MXN_RATE` | Tasa **manual** de respaldo | Ej. `18.5`. Solo si no hay FIX reciente; nunca se presenta como FIX |
 
 `.env.local` está en `.gitignore` (no se sube). En Vercel: Settings → Environment
 Variables + **Redeploy** (las `NEXT_PUBLIC_*` se hornean en el build).
@@ -71,6 +73,9 @@ lib/
   properties.js              ARCHIVO DE DATOS de propiedades (fuente de verdad)
   i18n.js                    diccionario bilingüe { es, en }
   ghl.js                     helper de GoHighLevel (contactos, citas, notas)
+  fxRate.js                  FIX de Banxico (SF43718) con caché + respaldos (solo servidor)
+  currency.js                conversión USD→MXN (la tasa llega como parámetro)
+  matching.js / chatTools.js búsqueda del chatbot y ejecución de sus herramientas
 public/                      imágenes (fotos en WebP; articulos/ = fotos del destino)
 ```
 
@@ -99,6 +104,12 @@ public/                      imágenes (fotos en WebP; articulos/ = fotos del de
   y cuando es momento emite el marcador interno **`[[BOOK]]`** (se quita del texto,
   la API devuelve `offer: true`) → el chat muestra el **formulario de nombre+teléfono**
   y luego la **mini-agenda** (`ChatScheduler.jsx`) que crea la cita.
+- **Presupuestos en USD**: el servidor convierte a MXN con el **FIX de Banxico**
+  (`lib/fxRate.js`, serie SF43718, endpoint `oportuno`). Caché hasta la siguiente
+  publicación (12:15 CDMX en día hábil). Respaldo: último FIX de ≤ 5 días →
+  `USD_TO_MXN_RATE` (manual, marcada como no oficial) → sin tasa (no filtra y pide
+  confirmar con el asesor). Herramienta `get_exchange_rate` para cuando el cliente
+  pregunta el tipo de cambio. El LLM nunca convierte ni inventa tasas.
 - El lead va a GHL vía `/api/chat-lead`; la cita vía `/api/submit-appointment`, y se
   envía la **conversación completa** como contexto (queda en el contacto).
 
@@ -144,6 +155,9 @@ API v2 (`services.leadconnectorhq.com`, versión `2021-07-28`, Bearer token).
 5. **Imágenes**: fotos pesadas en **WebP**; below-the-fold con `loading="lazy"`.
 6. **Mensajes de WhatsApp** sin emoji (varios se veían como `?` en Android).
 7. El **preloader** (`PageWrapper` → `Preloader`) se muestra una vez por carga completa.
+8. **Tipo de cambio**: nunca leer la tasa con `process.env` en `currency.js`/`matching.js`;
+   pasa por `lib/fxRate.js` → `searchInventory(criteria, { fx })`. Pruebas: `npm test`
+   (`scripts/test-matching.mjs` + `scripts/test-fx.mjs`, sin red: fetch y reloj simulados).
 
 ## Pendientes / ideas
 

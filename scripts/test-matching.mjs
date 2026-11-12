@@ -5,22 +5,15 @@
 //  (no fixtures) — si el inventario cambia, estas pruebas pueden necesitar
 //  ajustarse. Sin dependencias nuevas: usa node:assert.
 //
-//  Este proceso corre SIN USD_TO_MXN_RATE configurada (el estado por
-//  default, sin importar el shell del usuario — ver el `delete` abajo),
-//  para probar que las búsquedas en MXN y las validaciones de moneda
-//  funcionan igual sin esa variable. El caso "CON tasa configurada"
-//  (prueba B) corre en un proceso hijo aparte con USD_TO_MXN_RATE=18 —
-//  ver scripts/_test-with-rate.mjs para el porqué.
+//  La tasa USD→MXN ya no se lee del entorno: searchInventory la recibe
+//  como parámetro (options.fx), así que el caso "sin tasa" y "con tasa"
+//  corren en el mismo proceso. La obtención del FIX de Banxico, la caché
+//  y los respaldos se prueban en scripts/test-fx.mjs.
 //
 //  Uso: node scripts/test-matching.mjs   (o: npm test)
 // ============================================================
 
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 let passed = 0;
 let failed = 0;
@@ -37,18 +30,11 @@ function test(name, fn) {
   }
 }
 
-// Nos aseguramos de que ESTE proceso no la tenga, sin importar el entorno
-// del usuario, para que el grupo "sin tasa" sea determinista.
-delete process.env.USD_TO_MXN_RATE;
-
 const { searchInventory } = await import("../lib/matching.js");
 const { properties } = await import("../lib/properties.js");
 const { developments } = await import("../lib/developments.js");
-const { USD_TO_MXN_RATE } = await import("../lib/currency.js");
 
-console.log("\n=== Grupo 1: USD_TO_MXN_RATE NO configurada (estado por default) ===\n");
-
-assert.equal(USD_TO_MXN_RATE, null, "precondición: USD_TO_MXN_RATE debía ser null en este proceso");
+console.log("\n=== Grupo 1: búsquedas sin cotización USD→MXN disponible ===\n");
 
 // A) Puerto Morelos + departamento + 4.5 MDP (MXN)
 test("A) budgetMax:4500000 + budgetCurrency:MXN, Puerto Morelos + departamento → Selva Escondida, NO Puerto 369", () => {
@@ -117,9 +103,8 @@ test("G) Puerto 369 + category:['lote'] → permitido", () => {
   assert.ok(matches.some((m) => m.slug === "puerto-369"), "puerto-369 SÍ debe aparecer en una búsqueda de category:['lote']");
 });
 
-// Adicional (no es letra pedida explícitamente, pero exigida por el punto 2:
-// "comportamiento exacto si USD_TO_MXN_RATE no existe" cuando el usuario SÍ dio USD)
-test("(extra) USD con budgetCurrency dado pero SIN USD_TO_MXN_RATE → budgetCurrencyUnavailable, sigue buscando sin aplicar el filtro de presupuesto", () => {
+// USD sin ninguna tasa utilizable (ni FIX reciente ni tasa manual)
+test("(extra) USD con budgetCurrency dado pero SIN tasa disponible → budgetCurrencyUnavailable, sigue buscando sin aplicar el filtro de presupuesto", () => {
   const result = searchInventory({ city: "Puerto Morelos", category: ["departamento"], budgetMax: 250000, budgetCurrency: "USD" });
   assert.ok(!result.needsClarification, "la moneda SÍ se especificó (USD) — no debía pedir aclaración de moneda");
   assert.equal(result.budgetCurrencyUnavailable, true, "debía señalar que no pudo normalizar USD por falta de tasa configurada");
@@ -179,20 +164,69 @@ console.log("\n--- D-F de la ronda anterior (interpretación de lenguaje natural
 console.log("    No aplican a lib/matching.js — Claude nunca manda texto libre a search_inventory, solo {budgetMax, budgetCurrency}");
 console.log("    ya estructurados. Se validan con pruebas de conversación real (fuera del alcance de este script).");
 
-console.log("\n=== Grupo 2: USD_TO_MXN_RATE = 18 (proceso hijo con su propio entorno) ===\n");
-try {
-  const out = execFileSync(process.execPath, [path.join(__dirname, "_test-with-rate.mjs")], {
-    env: { ...process.env, USD_TO_MXN_RATE: "18" },
-    encoding: "utf8",
-  });
-  process.stdout.write(out);
-  passed++;
-} catch (err) {
-  failed++;
-  console.log("  ✗ Grupo 2 (proceso hijo con USD_TO_MXN_RATE=18) falló:");
-  process.stdout.write(err.stdout || "");
-  if (err.stderr) console.log(err.stderr);
-}
+console.log("\n=== Grupo 2: presupuesto en USD con cotización ===\n");
+
+const FIX = { rate: 18, source: "banxico_fix", fixDate: "2026-11-12", stale: false, reason: null };
+
+test("B) Puerto Morelos + departamento + 250,000 USD con FIX=18 → normaliza y encuentra Selva Escondida", () => {
+  const result = searchInventory(
+    { city: "Puerto Morelos", category: ["departamento"], budgetMax: 250000, budgetCurrency: "USD" },
+    { fx: FIX },
+  );
+  assert.ok(!result.needsClarification, "la moneda SÍ estaba dada — no debía pedir aclaración");
+  assert.ok(!result.budgetCurrencyUnavailable, "con cotización, USD sí debía poder normalizarse");
+  assert.equal(result.debug.budgetMaxNormalizedMXN, 250000 * 18);
+  assert.deepEqual(result.exchangeRate, { usdMxn: 18, source: "banxico_fix", officialBanxicoFix: true, fixDate: "2026-11-12" });
+  const slugs = result.matches.map((m) => m.slug);
+  assert.ok(slugs.includes("departamento-selva-escondida"), `debía incluir departamento-selva-escondida, obtuve: [${slugs.join(", ")}]`);
+});
+
+test("USD que NO alcanza (100,000 USD × 18 = 1.8 M MXN) → excluye Selva Escondida (2.3 M MXN)", () => {
+  const result = searchInventory(
+    { city: "Puerto Morelos", category: ["departamento"], budgetMax: 100000, budgetCurrency: "USD" },
+    { fx: FIX },
+  );
+  assert.ok(!result.matches.some((m) => m.slug === "departamento-selva-escondida"));
+});
+
+test("la misma búsqueda en MXN da el mismo resultado que su equivalente en USD", () => {
+  const usd = searchInventory({ city: "Cancún", category: ["casa"], budgetMax: 300000, budgetCurrency: "USD" }, { fx: FIX });
+  const mxn = searchInventory({ city: "Cancún", category: ["casa"], budgetMax: 5400000, budgetCurrency: "MXN" });
+  assert.deepEqual(usd.matches.map((m) => m.slug), mxn.matches.map((m) => m.slug));
+  assert.ok(usd.matches.length > 0, "debía haber casas en Cancún dentro de 5.4 M MXN");
+});
+
+test("presupuesto en MXN ignora por completo la cotización (aunque venga una)", () => {
+  const a = searchInventory({ city: "Puerto Morelos", category: ["departamento"], budgetMax: 4500000, budgetCurrency: "MXN" });
+  const b = searchInventory({ city: "Puerto Morelos", category: ["departamento"], budgetMax: 4500000, budgetCurrency: "MXN" }, { fx: { ...FIX, rate: 30 } });
+  assert.deepEqual(a.matches, b.matches);
+  assert.equal(b.exchangeRate, undefined, "en MXN no se reporta tipo de cambio");
+});
+
+test("tasa manual de respaldo → convierte, pero marcada como NO oficial", () => {
+  const result = searchInventory(
+    { city: "Puerto Morelos", category: ["departamento"], budgetMax: 250000, budgetCurrency: "USD" },
+    { fx: { rate: 18.5, source: "manual", fixDate: null } },
+  );
+  assert.equal(result.exchangeRate.officialBanxicoFix, false);
+  assert.equal(result.exchangeRate.source, "manual");
+  assert.equal(result.exchangeRate.fixDate, null);
+  assert.equal(result.debug.budgetMaxNormalizedMXN, 4625000);
+});
+
+test("cotización absurda (p. ej. 1.85 por error de captura) se descarta → budgetCurrencyUnavailable", () => {
+  const result = searchInventory(
+    { city: "Puerto Morelos", category: ["departamento"], budgetMax: 250000, budgetCurrency: "USD" },
+    { fx: { rate: 1.85, source: "manual" } },
+  );
+  assert.equal(result.budgetCurrencyUnavailable, true);
+});
+
+test("los precios del inventario no se modifican por las búsquedas en USD", () => {
+  const before = JSON.stringify(properties.map((p) => [p.slug, p.price, p.rentPrice]));
+  searchInventory({ budgetMax: 1, budgetCurrency: "USD" }, { fx: FIX });
+  assert.equal(JSON.stringify(properties.map((p) => [p.slug, p.price, p.rentPrice])), before);
+});
 
 console.log("\n--- Integridad del inventario ---\n");
 
