@@ -126,6 +126,10 @@ API v2 (`services.leadconnectorhq.com`, versión `2021-07-28`, Bearer token).
 - **Campos personalizados** (deben existir en GHL con estas keys exactas):
   `tipo_de_propiedad_de_inters`, `destino_de_inters` (dropdowns, se manda el slug),
   `presupuesto_del_lead` (Monetary, número), `datos_informativos` (multilínea, resumen/conversación).
+- **`presupuesto_del_lead` siempre en MXN** (`lib/leadBudget.js`): en el chatbot, un
+  presupuesto en USD se convierte con la misma cotización de `lib/fxRate.js`; sin tasa
+  o con moneda no confirmada se omite el campo. El importe/moneda original y el
+  equivalente con la tasa usada quedan en `datos_informativos`.
 - **Tags**: `caribeprive-web` + (`appointment-request` o `chatbot-lead`).
   **Source**: "Caribe Privé - Formulario Cita" / "Caribe Privé - Chatbot Web".
 - El calendario es **round robin** → asigna sola la cita a un asesor. El *owner del
