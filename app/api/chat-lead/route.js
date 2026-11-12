@@ -9,6 +9,8 @@
  * - name obligatorio + al menos un medio de contacto (phone o email).
  * - Rellena tipo_de_propiedad_de_inters / destino_de_inters /
  *   presupuesto_del_lead cuando se pueden derivar de `criteria`.
+ *   presupuesto_del_lead va SIEMPRE en MXN (USD se convierte con la misma
+ *   cotización que usa el chatbot, ver lib/leadBudget.js).
  * - datos_informativos = resumen comercial corto (criterios + qué se
  *   mostró), NUNCA el transcript completo.
  * - El transcript completo se guarda aparte como nota del contacto,
@@ -16,6 +18,8 @@
  */
 import { createOrUpdateContact, addNoteToContact } from "@/lib/ghl";
 import { PROP_SLUGS, DEST_SLUGS, CATEGORY_TO_PROPERTY_LABEL } from "@/lib/ghlMappings";
+import { getUsdMxnRate } from "@/lib/fxRate";
+import { computeLeadBudget, leadBudgetNeedsFx } from "@/lib/leadBudget";
 
 export const runtime = "nodejs";
 
@@ -48,20 +52,11 @@ function destSlugFromCriteria(criteria) {
   return slugFromLabelMap(DEST_SLUGS, criteria?.city) || slugFromLabelMap(DEST_SLUGS, criteria?.zone);
 }
 
-// Claude no siempre respeta el tipo declarado en el tool schema (a veces manda
-// budgetMax como string, decimal o un valor fuera de rango). Si el campo
-// Monetary de GHL recibe algo que no puede castear, rechaza el upsert COMPLETO
-// (no solo el campo) y el contacto entero se pierde — de ahí el saneo estricto.
-function sanitizeBudget(value) {
-  const n = Number(value);
-  return Number.isFinite(n) && n > 0 ? Math.round(n) : null;
-}
-
 const CATEGORY_LABELS = { casa: "Casa", departamento: "Departamento", lote: "Terreno", comercial: "Local Comercial" };
 const OPERATION_LABELS = { venta: "Venta", renta: "Renta" };
 const PURPOSE_LABELS = { vivir: "Vivir", inversion: "Inversión", segunda_residencia: "Segunda residencia" };
 
-function buildCriteriaSummary(criteria) {
+function buildCriteriaSummary(criteria, budgetLines = []) {
   if (!criteria) return null;
   const lines = [];
   if (criteria.operation) lines.push(`Operación: ${OPERATION_LABELS[criteria.operation] || criteria.operation}`);
@@ -71,16 +66,8 @@ function buildCriteriaSummary(criteria) {
   if (criteria.city || criteria.zone) {
     lines.push(`Ubicación: ${[criteria.zone, criteria.city].filter(Boolean).join(", ")}`);
   }
-  if (criteria.budgetMin != null || criteria.budgetMax != null) {
-    // Se conserva el importe y la moneda ORIGINALES del prospecto — nunca el
-    // valor normalizado a MXN que usa lib/matching.js internamente para filtrar.
-    const currency = criteria.budgetCurrency === "USD" ? "USD" : "MXN"; // MXN por default (moneda del inventario) si no vino
-    const fmt = (n) => `$${Number(n).toLocaleString("en-US")}`;
-    const min = criteria.budgetMin != null ? fmt(criteria.budgetMin) : null;
-    const max = criteria.budgetMax != null ? fmt(criteria.budgetMax) : null;
-    const range = [min, max].filter(Boolean).join(" – ");
-    lines.push(`Presupuesto: ${currency === "USD" ? `USD ${range}` : `${range} MXN`}`);
-  }
+  // Importe y moneda ORIGINALES del cliente + equivalente en MXN (lib/leadBudget.js).
+  lines.push(...budgetLines);
   if (criteria.bedroomsMin != null) lines.push(`Recámaras mín: ${criteria.bedroomsMin}`);
   if (criteria.purpose) lines.push(`Propósito: ${PURPOSE_LABELS[criteria.purpose] || criteria.purpose}`);
   if (criteria.deliveryPreference && criteria.deliveryPreference !== "cualquiera") {
@@ -89,10 +76,10 @@ function buildCriteriaSummary(criteria) {
   return lines.length ? lines.join("\n") : null;
 }
 
-function buildDatosInformativos({ criteria, matches }) {
+function buildDatosInformativos({ criteria, matches, budgetLines }) {
   const parts = ["Lead capturado vía chatbot web (Property Matchmaker)."];
 
-  const criteriaSummary = buildCriteriaSummary(criteria);
+  const criteriaSummary = buildCriteriaSummary(criteria, budgetLines);
   if (criteriaSummary) parts.push(criteriaSummary);
 
   if (Array.isArray(matches) && matches.length > 0) {
@@ -120,14 +107,16 @@ export async function POST(req) {
 
     const hasMatches = matches.length > 0;
     const tags = ["chatbot-lead", ...(hasMatches ? [] : ["busqueda-personalizada"])];
-    const datosInformativos = buildDatosInformativos({ criteria, matches });
+    // presupuesto_del_lead en MXN. Si el cliente habló en USD, se convierte
+    // con la misma cotización que usa el chatbot (FIX de Banxico o tasa
+    // manual de respaldo), consultada aquí en el servidor — nunca una tasa
+    // enviada por el navegador. Sin tasa utilizable, el campo se omite.
+    const fx = leadBudgetNeedsFx(criteria) ? await getUsdMxnRate() : null;
+    const { presupuestoMXN: budgetAmount, summaryLines: budgetLines } = computeLeadBudget(criteria, fx);
+    const datosInformativos = buildDatosInformativos({ criteria, matches, budgetLines });
 
     const propSlug = propSlugFromCriteria(criteria);
     const destSlug = destSlugFromCriteria(criteria);
-    // Importe ORIGINAL del prospecto (nunca el normalizado a MXN que usa
-    // lib/matching.js para filtrar) — criteria.budgetMax/budgetMin nunca
-    // pasan por lib/currency.js, así que ya vienen en la moneda del usuario.
-    const budgetAmount = sanitizeBudget(criteria?.budgetMax ?? criteria?.budgetMin);
 
     let { contactId, error } = await createOrUpdateContact({
       name,
