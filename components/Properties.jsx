@@ -12,7 +12,10 @@ export default function Properties() {
   const { t } = useLang();
   const [filter, setFilter] = useState("all");
 
-  const all = getPublicListings({ operation: "venta" }).filter((p) => p.kind !== "development");
+  // Destacadas (featured: true) primero; el resto conserva el orden del archivo de datos.
+  const all = getPublicListings({ operation: "venta" })
+    .filter((p) => p.kind !== "development")
+    .sort((a, b) => Number(b.featured) - Number(a.featured));
   const visible = filter === "all" ? all : all.filter((p) => p.city === filter);
 
   return (
