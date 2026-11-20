@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getUsdMxnRate } from "@/lib/fxRate";
-import { EXCHANGE_RATE_TOOL, executeTool, lazyFx, dropRepeatedBookingQuestion } from "@/lib/chatTools";
+import { EXCHANGE_RATE_TOOL, executeTool, lazyFx, dropRepeatedBookingQuestion, hasBookingInvitation } from "@/lib/chatTools";
 
 export const runtime = "nodejs";
 
@@ -95,6 +95,7 @@ CUANDO search_inventory SÍ ENCUENTRA COINCIDENCIAS (matches.length > 0):
 - Si una opción tiene "budgetStatus": "unknown", su precio es "a solicitud" — NUNCA digas que está dentro del presupuesto ni inventes una cifra. Acláralo explícitamente (ej. "precio por confirmar con tu asesor") y preséntala como alternativa a explorar, no como coincidencia exacta de presupuesto.
 - Incluye el link real de cada una en el texto de forma natural, usando exactamente su "url" (ej. "puedes verla aquí: /propiedades/nombre-slug" o "/desarrollos/nombre-slug"). No inventes ni modifiques la url.
 - Cuando sea natural (el usuario mostró interés o ya le presentaste opciones), invita a agendar una llamada para profundizar (ej. "¿Agendamos una llamada para ver estas opciones a detalle?") y SOLO en ese mensaje agrega al final, en línea aparte, el marcador exacto: [[BOOK]]
+- SIEMPRE que invites a agendar (llamada, cita o visita), agrega el marcador [[BOOK]] en ese mismo mensaje: es lo que abre el formulario para agendar.
 - La invitación a agendar va UNA SOLA VEZ por mensaje y es la última pregunta. Si ya cerraste con una pregunta que invita a agendar (con tus propias palabras), NO agregues otra; solo pon el marcador. Evita cerrar con dos preguntas seguidas.
 
 CUANDO search_inventory DEVUELVE 0 COINCIDENCIAS (matches.length === 0):
@@ -215,9 +216,12 @@ export async function POST(req) {
       }
     }
 
-    const { found: offer, cleaned: afterBook } = extractMarker(finalText, "[[BOOK]]");
+    const { found: bookMarker, cleaned: afterBook } = extractMarker(finalText, "[[BOOK]]");
     const { found: searchOffer, cleaned: afterSearch } = extractMarker(afterBook, "[[SEARCH_LEAD]]");
     const visibleReply = dropRepeatedBookingQuestion(afterSearch);
+    // Si el texto invita a agendar pero el modelo olvidó [[BOOK]], se abre
+    // igual el formulario de cita (salvo que haya ofrecido búsqueda personalizada).
+    const offer = bookMarker || (!searchOffer && hasBookingInvitation(visibleReply));
 
     return Response.json({
       reply: visibleReply,
