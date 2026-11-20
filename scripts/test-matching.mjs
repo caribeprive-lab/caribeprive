@@ -281,7 +281,8 @@ test("category.length > 1 solo permitido para desarrollos explícitamente confir
 
 console.log("\n=== Grupo 3: texto del chatbot ===\n");
 
-const { dropRepeatedBookingQuestion } = await import("../lib/chatTools.js");
+const mod = await import("../lib/chatTools.js");
+const { dropRepeatedBookingQuestion } = mod;
 
 test("quita la segunda invitación a agendar y conserva la primera", () => {
   const text = "Opción 1...\n\nAmbas encajan. ¿Cuál te gusta más, o quieres que agendemos una llamada para verlas?\n\n¿Agendamos una llamada para ver estas opciones a detalle?";
@@ -297,6 +298,15 @@ test("no toca mensajes con una sola invitación ni preguntas que no son de agend
   ]) {
     assert.equal(dropRepeatedBookingQuestion(text), text);
   }
+});
+
+test("detecta cuándo el texto invita a agendar (para abrir el formulario aunque falte [[BOOK]])", () => {
+  const { hasBookingInvitation } = mod;
+  assert.equal(hasBookingInvitation("¿Alguna te llama más la atención, o quieres que agendemos una visita para conocerlas?"), true);
+  assert.equal(hasBookingInvitation("Would you like to schedule a call?"), true);
+  assert.equal(hasBookingInvitation("¿Es para vivir o invertir?"), false);
+  assert.equal(hasBookingInvitation("¿Necesitas estacionamiento?"), false);
+  assert.equal(hasBookingInvitation("Un asesor te llamará para agendar."), false);
 });
 
 console.log(`\n${passed} pasaron, ${failed} fallaron.\n`);
