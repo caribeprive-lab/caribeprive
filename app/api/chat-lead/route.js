@@ -83,7 +83,7 @@ function buildDatosInformativos({ criteria, matches, budgetLines }) {
   if (criteriaSummary) parts.push(criteriaSummary);
 
   if (Array.isArray(matches) && matches.length > 0) {
-    parts.push(`Propiedades mostradas: ${matches.map((m) => m.name).join(", ")}`);
+    parts.push(`Coincidencias encontradas (${matches.length}): ${matches.map((m) => m.name).join(", ")}`);
   } else {
     parts.push("0 coincidencias adecuadas en inventario publicado — oportunidad de búsqueda personalizada");
   }

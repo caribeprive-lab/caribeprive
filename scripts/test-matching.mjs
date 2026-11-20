@@ -245,6 +245,18 @@ test("devuelve TODAS las coincidencias (no solo las primeras 6): rentas de depar
   assert.equal(totalBeforeCap, matches.length, "no debía recortar coincidencias");
 });
 
+test("ninguna búsqueda recorta coincidencias: todos los tipos × venta/renta, con y sin presupuesto", () => {
+  for (const operation of ["venta", "renta", undefined]) {
+    for (const category of [["casa"], ["departamento"], ["lote"], ["comercial"], undefined]) {
+      for (const budgetMax of [undefined, 100000000]) {
+        const c = { operation, category, ...(budgetMax && { budgetMax, budgetCurrency: "MXN" }) };
+        const { matches, totalBeforeCap } = searchInventory(c);
+        assert.equal(matches.length, totalBeforeCap, `recortó resultados para ${JSON.stringify(c)}: ${matches.length} de ${totalBeforeCap}`);
+      }
+    }
+  }
+});
+
 test("category.length > 1 solo permitido para desarrollos explícitamente confirmados por el negocio", () => {
   // Lista blanca de slugs confirmados como legítimamente multi-categoría
   // (venden MÁS DE UN tipo de producto real, no solo palabras similares en
