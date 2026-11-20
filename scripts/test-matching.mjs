@@ -230,6 +230,21 @@ test("los precios del inventario no se modifican por las búsquedas en USD", () 
 
 console.log("\n--- Integridad del inventario ---\n");
 
+test("devuelve TODAS las coincidencias (no solo las primeras 6): rentas de departamento ≤ $40,000 MXN", () => {
+  const expected = properties
+    .filter((p) => p.published !== false && (p.category || []).includes("departamento"))
+    .filter((p) => {
+      const rent = p.rentPrice?.amount ?? (p.operation === "renta" ? p.price?.amount : null);
+      return rent != null && rent <= 40000;
+    })
+    .map((p) => p.slug);
+  assert.ok(expected.length > 6, `la prueba necesita más de 6 candidatos para ser útil (hay ${expected.length})`);
+  const { matches, totalBeforeCap } = searchInventory({ operation: "renta", category: ["departamento"], budgetMax: 40000, budgetCurrency: "MXN" });
+  const slugs = matches.map((m) => m.slug);
+  for (const slug of expected) assert.ok(slugs.includes(slug), `faltó ${slug}; obtuve: [${slugs.join(", ")}]`);
+  assert.equal(totalBeforeCap, matches.length, "no debía recortar coincidencias");
+});
+
 test("category.length > 1 solo permitido para desarrollos explícitamente confirmados por el negocio", () => {
   // Lista blanca de slugs confirmados como legítimamente multi-categoría
   // (venden MÁS DE UN tipo de producto real, no solo palabras similares en
