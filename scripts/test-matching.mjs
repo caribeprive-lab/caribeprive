@@ -279,5 +279,25 @@ test("category.length > 1 solo permitido para desarrollos explícitamente confir
   );
 });
 
+console.log("\n=== Grupo 3: texto del chatbot ===\n");
+
+const { dropRepeatedBookingQuestion } = await import("../lib/chatTools.js");
+
+test("quita la segunda invitación a agendar y conserva la primera", () => {
+  const text = "Opción 1...\n\nAmbas encajan. ¿Cuál te gusta más, o quieres que agendemos una llamada para verlas?\n\n¿Agendamos una llamada para ver estas opciones a detalle?";
+  const out = dropRepeatedBookingQuestion(text);
+  assert.equal(out, "Opción 1...\n\nAmbas encajan. ¿Cuál te gusta más, o quieres que agendemos una llamada para verlas?");
+});
+
+test("no toca mensajes con una sola invitación ni preguntas que no son de agendar", () => {
+  for (const text of [
+    "Opción 1...\n\n¿Agendamos una llamada para ver estas opciones a detalle?",
+    "¿Te muestro las 12 restantes?\n\n¿Es para vivir o invertir?",
+    "¿Necesitas estacionamiento?\n\n¿Agendamos una llamada?",
+  ]) {
+    assert.equal(dropRepeatedBookingQuestion(text), text);
+  }
+});
+
 console.log(`\n${passed} pasaron, ${failed} fallaron.\n`);
 if (failed > 0) process.exit(1);

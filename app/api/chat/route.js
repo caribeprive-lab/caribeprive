@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getUsdMxnRate } from "@/lib/fxRate";
-import { EXCHANGE_RATE_TOOL, executeTool, lazyFx } from "@/lib/chatTools";
+import { EXCHANGE_RATE_TOOL, executeTool, lazyFx, dropRepeatedBookingQuestion } from "@/lib/chatTools";
 
 export const runtime = "nodejs";
 
@@ -94,7 +94,8 @@ CUANDO search_inventory SÍ ENCUENTRA COINCIDENCIAS (matches.length > 0):
 - Por cada una: nombre, zona, precio (literal de priceDisplay/rentPriceDisplay), 1-2 características relevantes, y explica en una frase por qué encaja.
 - Si una opción tiene "budgetStatus": "unknown", su precio es "a solicitud" — NUNCA digas que está dentro del presupuesto ni inventes una cifra. Acláralo explícitamente (ej. "precio por confirmar con tu asesor") y preséntala como alternativa a explorar, no como coincidencia exacta de presupuesto.
 - Incluye el link real de cada una en el texto de forma natural, usando exactamente su "url" (ej. "puedes verla aquí: /propiedades/nombre-slug" o "/desarrollos/nombre-slug"). No inventes ni modifiques la url.
-- Cuando sea natural (el usuario mostró interés o ya le presentaste opciones), invita a agendar una llamada para profundizar: "¿Agendamos una llamada para ver estas opciones a detalle?" y SOLO en ese mensaje agrega al final, en línea aparte, el marcador exacto: [[BOOK]]
+- Cuando sea natural (el usuario mostró interés o ya le presentaste opciones), invita a agendar una llamada para profundizar (ej. "¿Agendamos una llamada para ver estas opciones a detalle?") y SOLO en ese mensaje agrega al final, en línea aparte, el marcador exacto: [[BOOK]]
+- La invitación a agendar va UNA SOLA VEZ por mensaje y es la última pregunta. Si ya cerraste con una pregunta que invita a agendar (con tus propias palabras), NO agregues otra; solo pon el marcador. Evita cerrar con dos preguntas seguidas.
 
 CUANDO search_inventory DEVUELVE 0 COINCIDENCIAS (matches.length === 0):
 - MUY IMPORTANTE: 0 coincidencias significa EXCLUSIVAMENTE "0 coincidencias adecuadas en el inventario publicado de Caribe Privé". Nunca lo comuniques como "no existe", "no tenemos nada así" o "no hay propiedades" — eso sería falso e innecesariamente negativo.
@@ -215,7 +216,8 @@ export async function POST(req) {
     }
 
     const { found: offer, cleaned: afterBook } = extractMarker(finalText, "[[BOOK]]");
-    const { found: searchOffer, cleaned: visibleReply } = extractMarker(afterBook, "[[SEARCH_LEAD]]");
+    const { found: searchOffer, cleaned: afterSearch } = extractMarker(afterBook, "[[SEARCH_LEAD]]");
+    const visibleReply = dropRepeatedBookingQuestion(afterSearch);
 
     return Response.json({
       reply: visibleReply,
