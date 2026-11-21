@@ -88,6 +88,7 @@ const DESTINATIONS = [
   { id: "pm",      label: "Puerto Morelos" },
   { id: "playa",   label: "Playa del Carmen" },
   { id: "tulum",   label: "Tulum" },
+  { id: "bacalar", label: "Bacalar" },
   { id: "riviera", label: "Riviera Maya" },
 ];
 
