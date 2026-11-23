@@ -107,7 +107,7 @@ export default function Chat({ propertyName = null }) {
     try {
       const transcript = messages
         .filter((m) => m.role === "user" || m.role === "assistant")
-        .map((m) => `${m.role === "user" ? "Cliente" : "Ana"}: ${m.content}`)
+        .map((m) => `${m.role === "user" ? "Cliente" : "Asistente virtual"}: ${m.content}`)
         .join("\n");
       await fetch("/api/chat-lead", {
         method: "POST",
@@ -143,7 +143,7 @@ export default function Chat({ propertyName = null }) {
       const context = messages
         .filter((m) => m.role === "user" || m.role === "assistant")
         .slice(-12)
-        .map((m) => `${m.role === "user" ? "Cliente" : "Ana"}: ${m.content}`)
+        .map((m) => `${m.role === "user" ? "Cliente" : "Asistente virtual"}: ${m.content}`)
         .join("\n");
       const res = await fetch("/api/submit-appointment", {
         method: "POST",
@@ -188,9 +188,9 @@ export default function Chat({ propertyName = null }) {
         <div className="absolute bottom-16 right-0 w-[340px] max-w-[calc(100vw-3rem)] bg-paper border border-line rounded-2xl shadow-[0_24px_60px_rgba(12,22,38,0.25)] overflow-hidden">
           <div className="bg-blue text-white px-5 py-4 flex justify-between items-center">
             <div className="flex items-center gap-3">
-              <img src="/anachat.png" alt="Ana" className="w-10 h-10 rounded-full object-cover" />
+              <img src="/asistente-virtual.svg" alt="Asistente virtual de Caribe Privé" className="w-10 h-10 rounded-full object-cover" />
               <div>
-                <div className="font-semibold text-[15px]">Ana Paula Quiroga</div>
+                <div className="font-semibold text-[13px] leading-tight">{es ? "Asistente virtual" : "Virtual assistant"}<br />{es ? "de Caribe Privé" : "Caribe Privé"}</div>
                 <div className="text-[11px] text-green-300 tracking-wide flex items-center gap-1">
                   <span className="w-1.5 h-1.5 bg-green-400 rounded-full" /> Online
                 </div>
@@ -207,7 +207,7 @@ export default function Chat({ propertyName = null }) {
                 </div>
               ) : (
                 <div key={i} className="flex items-end gap-2 self-start max-w-[85%]">
-                  <img src="/anachat.png" alt="Ana" className="w-6 h-6 rounded-full object-cover flex-shrink-0 mb-0.5" />
+                  <img src="/asistente-virtual.svg" alt="Asistente virtual de Caribe Privé" className="w-6 h-6 rounded-full object-cover flex-shrink-0 mb-0.5" />
                   <div className="text-[13.5px] px-3.5 py-2.5 rounded-xl rounded-bl-sm whitespace-pre-wrap bg-bone text-ink">
                     {renderWithLinks(m.content)}
                   </div>
@@ -228,7 +228,7 @@ export default function Chat({ propertyName = null }) {
 
             {loading && (
               <div className="flex items-end gap-2 self-start">
-                <img src="/anachat.png" alt="Ana" className="w-6 h-6 rounded-full object-cover flex-shrink-0 mb-0.5" />
+                <img src="/asistente-virtual.svg" alt="Asistente virtual de Caribe Privé" className="w-6 h-6 rounded-full object-cover flex-shrink-0 mb-0.5" />
                 <div className="bg-bone text-ink rounded-xl rounded-bl-sm px-3.5 py-2.5 text-[13.5px]">
                   <span className="inline-flex gap-1"><Dot /> <Dot d="150ms" /> <Dot d="300ms" /></span>
                 </div>
@@ -290,7 +290,7 @@ export default function Chat({ propertyName = null }) {
         )}
         <button onClick={() => setOpen((o) => !o)}
           className="relative w-14 h-14 rounded-full shadow-[0_12px_30px_rgba(10,53,113,0.4)] overflow-visible">
-          <img src="/anachat.png" alt="Ana" className="w-14 h-14 rounded-full object-cover" />
+          <img src="/asistente-virtual.svg" alt="Asistente virtual de Caribe Privé" className="w-14 h-14 rounded-full object-cover" />
           <span className="absolute bottom-0.5 right-0.5 w-3.5 h-3.5 bg-green-400 border-2 border-white rounded-full" />
         </button>
       </div>
