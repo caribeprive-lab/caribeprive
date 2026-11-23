@@ -49,7 +49,9 @@ export default function Chat({ propertyName = null }) {
 
   useEffect(() => {
     setMessages((m) =>
-      m.length === 0 ? [{ role: "assistant", content: t("chat.greeting") }] : m
+      m.length === 0 || (m.length === 1 && m[0].role === "assistant")
+        ? [{ role: "assistant", content: t("chat.greeting") }]
+        : m
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang]);
@@ -365,4 +367,4 @@ function IconMessage() {
 
 function Dot({ d = "0ms" }) {
   return <span className="w-1.5 h-1.5 bg-muted rounded-full animate-bounce inline-block" style={{ animationDelay: d }} />;
-}
+          }
